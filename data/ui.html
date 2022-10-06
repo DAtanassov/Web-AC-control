@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0"
+    ><!--meta http-equiv='X-UA-Compatible' content='IE=edge'-->
+    
+    <title>AC WiFi IR Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
+    
+    <link rel='stylesheet' type='text/css' href='main.min.css'>
+    <script type="text/javascript" src="jquery-latest.min.js"></script>
+    <script type="text/javascript" src='jquery.blockUI.min.js'></script>
+    <script type="text/javascript" src='main.min.js'></script>
+    <!--script type="text/javascript" src='bootstrap.min.js'></script-->
+    <link rel='stylesheet' type='text/css' href='bootstrap.min.css'>
+    
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="html5shiv.min.js"></script>
+        <script src="respond.min.js"></script>
+    <![endif]-->
+    
+</head>
+<body>
+    <div class="container">
+        <div class="container-fluid">
+            <div class="row row-no-gutters justify-content-center">
+                <div class="text-center">
+                    <h5><a id="devName" href="s.html" target="_blank">AC WiFi IR Control</a></h5>
+                </div>
+            </div>
+            <!-- Mode Power Temp Fan-->
+            <div class="row row-no-gutters justify-content-center">
+                
+                <div class="col-auto" style="max-width: 80px;">
+                    <!-- Mode -->
+                    <div class="btn-group-vertical float-left" aria-label="Mode button group">
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_auto" onclick='mode_onclick(0);'><img alt="Auto"src="font.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_cooling" onclick='mode_onclick(1);'><img alt="Cooling"src="snowflake.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_dehum" onclick='mode_onclick(2);'><img alt="Dehumidifying"src="tint.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_fan" onclick='mode_onclick(3);'><img alt="Fan"src="retweet.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_heating" onclick='mode_onclick(4);'><img alt="Heating"src="sun.svg" width="28px" height="32px"></button>
+                    </div>
+                </div>
+
+                <div class="col-auto" style="max-width: 140px;">
+                    <!--Power ON/OFF Temperature-->
+                    <div class="btn-group-vertical" aria-label="Power and Temperature group">
+                        <!-- ON/OFF -->
+                        <div class="btn-group button-wrapper">
+                            <button type="button" id="power-btn" class="btn btn-danger text-nowrap" onclick='power_onclick();'><img alt="Power"src="power-off.svg" width="25px" height="25px" style="font-size:1.6em;color:black;"><b style="font-size:1.5em;" id="power"> OFF</b></button>
+                        </div>
+                        <!--Temperature-->
+                        <div class="btn-group-vertical">
+                            <button type="button" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp" onclick='updateStatus();' style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b id="target_temp"> ~ °C</b></button>
+                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_up" onclick='temp_onclick(1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Up"src="chevron-up.svg" width="23px" height="26px"></button>
+                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_down" onclick='temp_onclick(-1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Down"src="chevron-down.svg" width="23px" height="26px"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-auto" style="max-width: 80px;">
+                    <!-- Fan -->
+                    <div class="btn-group-vertical float-right" aria-label="Fan button group">
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_auto" onclick='fan_onclick(0);'><img alt="Auto"src="font.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_high" onclick='fan_onclick(4);'><img alt="High"src="level_4_off.svg" width="28px" height="32px" id="fan_lvl_4"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_med" onclick='fan_onclick(3);'><img alt="Medium"src="level_3_off.svg" width="28px" height="32px" id="fan_lvl_3"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_low" onclick='fan_onclick(2);'><img alt="Low"src="level_2_off.svg" width="28px" height="32px" id="fan_lvl_2"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_quiet" onclick='fan_onclick(1);'><img alt="Quiet"src="level_1_off.svg" width="28px" height="32px" id="fan_lvl_1"></button>
+                    </div>
+                    
+                </div>
+
+            </div> <!-- row -->
+            <br>
+            <!--econo Low Noise Swing Set-->
+            <div class="row row-no-gutters justify-content-center">
+
+                <div class="col-auto">
+                    <div class="btn-group-vertical float-left button-wrapper clearfix" role="group" aria-label="Vertical button group">
+                        <!--10 °C HEAT-->
+                        <button type="button" id="heat10-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='heat10_onclick();' disabled><b style="font-size:1.2em; color: black;" id="heat10">10°C HEAT</b></button>
+                        <!--econo-->
+                        <button type="button" id="econo-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='econo_onclick();'><b style="font-size:1.2em; color: black;" id="econo">Economy</b></button>
+                        <!--Low Noise-->
+                        <button type="button" id="lowNoise-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='lowNoise_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Low Noise</b></button>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group-vertical float-right button-wrapper clearfix" role="group" aria-label="Vertical button group">
+                        <!--POWERFUL-->
+                        <button type="button" id="turbo-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='turbo_onclick();'><b style="font-size:1.2em; color: black;" id="turbo">Powerful</b></button>
+                        <!--Swing-->
+                        <button type="button" id="swing-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='swing_onclick();'><b style="font-size:1.2em; color: black;" id="swingvert">Swing OFF</b></button>
+                        <!--Swing Step-->
+                        <button type="button" id="stepVert-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='StepV_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">V Step Set</b></button>
+                    </div>
+                </div>
+
+            </div> <!-- row -->
+
+        </div>
+
+    </div>
+</body>
+</html>

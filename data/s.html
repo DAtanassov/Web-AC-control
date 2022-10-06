@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>AC WiFi IR Control Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <style type="text/css">
+		body {
+			padding-top: 5px;
+		}
+	</style>
+    
+    <script type="text/javascript" src="jquery-latest.min.js"></script>
+    
+    <script type="text/javascript" src='s.min.js'></script>
+    <script type="text/javascript" src='jquery.blockUI.min.js'></script>
+    
+    <!--script type="text/javascript" src='bootstrap.min.js'></script-->
+    <link rel='stylesheet' type='text/css' href='bootstrap.min.css'>
+    
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="html5shiv.min.js"></script>
+        <script src="respond.min.js"></script>
+    <![endif]-->
+
+</head>
+<body>
+    <div class="container">
+        <div class="container-fluid">
+            
+            <div class="row">
+                <div class="text-center">
+                    <h5>AC WiFi IR Control Settings</h5>
+                </div>
+            </div>
+
+            <div class="row">
+                
+                <div class="input-group mb-3">
+                    <span class="input-group-text d-none d-sm-block">Device name / SSID</span>
+                    <input class="form-control" aria-label="Device name / SSID" placeholder="Device name / SSID" type="text" maxlength="32" id="deviceName" name="deviceName">
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="startAP" name="startAP"> AP
+                    </div>
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="hideSSID" name="hideSSID"> Hide
+                    </div>
+                </div>
+                
+                <div class="input-group mb-3">
+                    <span class="input-group-text d-none d-sm-block">WiFi pass</span>
+                    <input class="form-control" aria-label="WiFi pass" placeholder="WiFi pass" type="password" maxlength="32" id="wifiPass" name="wifiPass">
+                    <!--span class="input-group-text d-none d-sm-block">Channel</span>
+                    <input class="form-control" aria-label="WiFi Channel" placeholder="WiFi Channel" type="number" maxlength="2" min="1" max="13" id="wifiChannel" name="wifiChannel"-->
+                    <label class="input-group-text d-none d-sm-block" for="wifiChannel">Ch</label>
+                    <select class="form-select" id="wifiChannel" name="wifiChannel">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                    </select>
+                </div>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text d-none d-sm-block">Address for update</span>
+                    <input class="form-control" aria-label="Server" placeholder="Server" type="text" maxlength="32" id="updSvr" name="updSvr">
+                    <span class="input-group-text d-none d-sm-block">:</span>
+                    <input class="form-control" aria-label="Port" placeholder="Port" type="number" maxlength="5" min="1" max="65535" id="updSvrPort" name="updSvrPort">
+                    <button type="button" class="btn btn-outline-warning" onclick="checkUPD();">Check</button>
+                </div>
+
+            </div>
+
+            <div class="row">
+
+                <div class="input-group mb-3">
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="autoupdate" name="autoupdate"> Autoupdate
+                    </div>
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="enableIRRecv" name="enableIRRecv"> Enable IRRecv
+                    </div>
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="synchronise" name="synchronise" disabled> Synchronize other devices 
+                    </div>
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe"> Synchronize with other devices
+                    </div>
+                </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Observe doors</span>
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="innerDoor" name="innerDoor" disabled> Inners
+                    </div>
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="outerDoor" name="outerDoor" disabled> Outers
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="row">
+                
+                <div class="input-group mb-3">
+                    <button type="button" class="form-control btn btn-outline-primary" onclick="getSettings();">Read</button>
+                    <button type="button" class="form-control btn btn-outline-success" onclick="setSettings();">Save</button>
+                    <button type="button" class="form-control btn btn-outline-danger" onclick="devRestart();">Restart RC</button>
+                </div>
+
+            </div>
+
+        </div>
+        
+    </div>
+</body>
+</html>
