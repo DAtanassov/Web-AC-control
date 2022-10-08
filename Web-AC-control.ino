@@ -62,6 +62,18 @@ const uint16_t kIrLedPin = 4;
 
 #endif
 
+// ARRAH2E = 1,  ///< (1) AR-RAH2E, AR-RAC1E, AR-RAE1E, AR-RCE1E, AR-RAH2U,
+//               ///<     AR-REG1U (Default)
+//               ///< Warning: Use on incorrect models can cause the A/C to lock
+//               ///< up, requring the A/C to be physically powered off to fix.
+//               ///< e.g. AR-RAH1U may lock up with a Swing command.
+// ARDB1,        ///< (2) AR-DB1, AR-DL10 (AR-DL10 swing doesn't work)
+// ARREB1E,      ///< (3) AR-REB1E, AR-RAH1U (Similar to ARRAH2E but no horiz
+//               ///<     control)
+// ARJW2,        ///< (4) AR-JW2  (Same as ARDB1 but with horiz control)
+// ARRY4,        ///< (5) AR-RY4 (Same as AR-RAH2E but with clean & filter)
+// ARREW4E,      ///< (6) Similar to ARRAH2E, but with different temp config.
+
 // The Serial connection baud rate.
 // NOTE: Make sure you set your Serial Monitor to the same speed.
 const uint32_t kBaudRate = 115200;
@@ -98,6 +110,7 @@ decode_results results;
 struct state {
   uint8_t temperature = 22, fan = 0, operation = 0;
   bool swingvert;
+  bool swinghor;
   bool powerStatus;
   bool econo;
   bool lowNoise;
@@ -128,6 +141,8 @@ struct DeviceSettings {
   char mqtt_topic[32];
   char mqtt_username[32];
   char mqtt_password[32];
+  // Model
+  unsigned short irModel;
 };
 
 File fsUploadFile;
@@ -426,6 +441,7 @@ void getDevState() {
   root["temp"] = acState.temperature;
   root["power"] = acState.powerStatus;
   root["swingvert"] = acState.swingvert;
+  root["swinghor"] = acState.swinghor;
   root["econo"] = acState.econo;
   root["lowNoise"] = acState.lowNoise;
   root["heatTenC"] =  acState.heatTenC;
@@ -472,6 +488,8 @@ void getDeviceSettings() {
   root["mqtt_topic"] = root["mqtt_topic"] | deviceSettings.mqtt_topic;
   root["mqtt_username"] = root["mqtt_username"] | deviceSettings.mqtt_username;
   root["mqtt_password"] = root["mqtt_password"] | deviceSettings.mqtt_password;
+  // Model
+  root["irModel"] = root["irModel"] | deviceSettings.irModel;
   
   // Close the file (File's destructor doesn't close the file)
   file.close();
@@ -519,6 +537,9 @@ void postState() {
     if (root.containsKey("swingvert")) {
       acState.swingvert = root["swingvert"];
     }
+    if (root.containsKey("swinghor")) {
+      acState.swinghor = root["swinghor"];
+    }
     if (root.containsKey("econo")) {
       acState.econo = root["econo"];
     }
@@ -543,6 +564,7 @@ void postState() {
       Serial.print("fan: ");Serial.println(acState.fan);
       Serial.print("temperature: ");Serial.println(acState.temperature);
       Serial.print("swingvert: ");Serial.println(acState.swingvert);
+      Serial.print("swinghor: ");Serial.println(acState.swinghor);
       
       irsend.setTemp(acState.temperature);
       
@@ -570,12 +592,18 @@ void postState() {
         irsend.setFanSpeed(kFujitsuAcFanHigh);
       }
 
-      if (acState.swingvert) {
-        irsend.setSwing(kFujitsuAcSwingVert);
+      if ((acState.swingvert) && (acState.swinghor)) {
+        irsend.setSwing(kFujitsuAcSwingBoth);
       } else {
-        irsend.setSwing(kFujitsuAcSwingOff);
+        if (acState.swingvert) {
+          irsend.setSwing(kFujitsuAcSwingVert);
+        } else if (acState.swinghor) {
+          irsend.setSwing(kFujitsuAcSwingHoriz);
+        } else {
+          irsend.setSwing(kFujitsuAcSwingOff);
+        }
       }
-      
+
       irsend.setCmd(kFujitsuAcCmdTurnOn);
       
     } else {
@@ -659,6 +687,43 @@ void postStepV() {
       sendMQTT("{\"islocal\":true,\"ep\":\"stepv\", \"message\":" + output + "}");
       
       syncWithOtherDevices(output, "/stepv");
+      
+    }
+  }
+}
+
+// Serving postStepH
+void postStepH() {
+  
+  DynamicJsonDocument root(1024);
+  DeserializationError error = deserializeJson(root, server.arg("plain"));
+  setCrossOrigin();
+  if (error) {
+    server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
+  } else {
+
+    if (root.containsKey("swinghor")) {
+      acState.swinghor = root["swinghor"];
+    }
+    
+    String output;
+    serializeJson(root, output);
+    //server.send(200, "text/plain", output);
+    server.send(200, "application/json", output);
+    
+    delay(200);
+    
+    if (root["steph"]) {
+  
+      Serial.println("Step vertical");
+      
+      irsend.setCmd(kFujitsuAcCmdStepHoriz);
+      
+      disableEnableIRRecvAndSend();
+
+      sendMQTT("{\"islocal\":true,\"ep\":\"steph\", \"message\":" + output + "}");
+      
+      syncWithOtherDevices(output, "/steph");
       
     }
   }
@@ -786,6 +851,7 @@ void postDeviceSettings() {
     File file = FILESYSTEM.open(filenameS, "w");
     bool newSettingsAP = false;
     bool changeStateMQTT = false;
+    bool newIRmodel = false;
     
     if (root.containsKey("deviceName")) {
       newSettingsAP = deviceSettings.deviceName != root["deviceName"];
@@ -875,6 +941,28 @@ void postDeviceSettings() {
       changeStateMQTT = deviceSettings.mqtt_password != root["mqtt_password"] || changeStateMQTT;
       strlcpy(deviceSettings.mqtt_password, root["mqtt_password"], sizeof(deviceSettings.mqtt_password));
     }
+    // Model
+    if (root.containsKey("irModel")) {
+      newIRmodel = deviceSettings.irModel != root["irModel"];
+      deviceSettings.irModel = root["irModel"];
+    }
+
+    if (newIRmodel) {
+      // Set up what we want to send. See ir_Fujitsu.cpp for all the options.
+      // See `fujitsu_ac_remote_model_t` in `ir_Fujitsu.h` for a list of models.
+      if (deviceSettings.irModel == 1){
+        irsend.setModel(ARRAH2E);}
+      else if (deviceSettings.irModel == 2){
+        irsend.setModel(ARDB1);}
+      else if (deviceSettings.irModel == 3){
+        irsend.setModel(ARREB1E);}
+      else if (deviceSettings.irModel == 4){
+        irsend.setModel(ARJW2);}
+      else if (deviceSettings.irModel == 5){
+        irsend.setModel(ARRY4);}
+      else if (deviceSettings.irModel == 6){
+        irsend.setModel(ARREW4E);}
+    }
     
     // Serialize JSON to file
     serializeJson(root, file);
@@ -937,6 +1025,8 @@ void setDeviceSettings() {
   strlcpy(deviceSettings.mqtt_topic, root["mqtt_topic"] | "", sizeof(deviceSettings.mqtt_topic));
   strlcpy(deviceSettings.mqtt_username, root["mqtt_username"] | "", sizeof(deviceSettings.mqtt_username));
   strlcpy(deviceSettings.mqtt_password, root["mqtt_password"] | "", sizeof(deviceSettings.mqtt_password));
+  // Model
+  deviceSettings.irModel = root["irModel"] | 1;
   
   if (!fileExists) {
 
@@ -962,6 +1052,8 @@ void setDeviceSettings() {
     root["mqtt_topic"] = deviceSettings.mqtt_topic;
     root["mqtt_username"] = deviceSettings.mqtt_username;
     root["mqtt_password"] = deviceSettings.mqtt_password;
+    // Model
+    root["irModel"] = deviceSettings.irModel;
     
     // Serialize JSON to file
     serializeJson(root, file);
@@ -1037,6 +1129,8 @@ void setWebServer() {
   server.on("/state", HTTP_POST, postState);
   //server.on("/stepv", HTTP_OPTIONS, sendCrossOriginHeader);
   server.on("/stepv", HTTP_POST, postStepV);
+  //server.on("/steph", HTTP_OPTIONS, sendCrossOriginHeader);
+  server.on("/steph", HTTP_POST, postStepH);
   //server.on("/turbo", HTTP_OPTIONS, sendCrossOriginHeader);
   server.on("/turbo", HTTP_POST, postTurbo);
   //server.on("/econo", HTTP_OPTIONS, sendCrossOriginHeader);
@@ -1217,6 +1311,7 @@ void setMQTT(){
   root["temp"] = acState.temperature;
   root["power"] = acState.powerStatus;
   root["swingvert"] = acState.swingvert;
+  root["swinghor"] = acState.swinghor;
   root["econo"] = acState.econo;
   root["lowNoise"] = acState.lowNoise;
   root["heatTenC"] =  acState.heatTenC;
@@ -1289,6 +1384,9 @@ void onMqttMessage(int messageSize) {
       if (root["message"].containsKey("swingvert")) {
         acState.swingvert = root["message"]["swingvert"];
       }
+      if (root["message"].containsKey("swinghor")) {
+        acState.swinghor = root["message"]["swinghor"];
+      }
       if (root["message"].containsKey("econo")) {
         acState.econo = root["message"]["econo"];
       }
@@ -1308,6 +1406,7 @@ void onMqttMessage(int messageSize) {
           Serial.print("fan: ");Serial.println(acState.fan);
           Serial.print("temperature: ");Serial.println(acState.temperature);
           Serial.print("swingvert: ");Serial.println(acState.swingvert);
+          Serial.print("swinghor: ");Serial.println(acState.swinghor);
           
           irsend.setTemp(acState.temperature);
           
@@ -1335,12 +1434,18 @@ void onMqttMessage(int messageSize) {
             irsend.setFanSpeed(kFujitsuAcFanHigh);
           }
     
-          if (acState.swingvert) {
-            irsend.setSwing(kFujitsuAcSwingVert);
+          if ((acState.swingvert) && (acState.swinghor)) {
+            irsend.setSwing(kFujitsuAcSwingBoth);
           } else {
-            irsend.setSwing(kFujitsuAcSwingOff);
+            if (acState.swingvert) {
+              irsend.setSwing(kFujitsuAcSwingVert);
+            } else if (acState.swinghor) {
+              irsend.setSwing(kFujitsuAcSwingHoriz);
+            } else {
+              irsend.setSwing(kFujitsuAcSwingOff);
+            }
           }
-          
+
           irsend.setCmd(kFujitsuAcCmdTurnOn);
           
         } else {
@@ -1376,7 +1481,21 @@ void onMqttMessage(int messageSize) {
         mustSend = true;
         
       }
+
+     } else if (root["ep"] == "steph"){
+
+      if (root["message"].containsKey("swinghor")) {
+        acState.swinghor = root["message"]["swinghor"];
+      }
       
+      if (root["message"]["steph"]) {
+    
+        Serial.println("Step horizontal");
+        irsend.setCmd(kFujitsuAcCmdStepHoriz);
+        mustSend = true;
+        
+      }
+        
     } else if (root["ep"] == "econo"){
 
       if (root["message"].containsKey("econo")) {
@@ -1442,6 +1561,7 @@ void onMqttMessage(int messageSize) {
   root["temp"] = acState.temperature;
   root["power"] = acState.powerStatus;
   root["swingvert"] = acState.swingvert;
+  root["swinghor"] = acState.swinghor;
   root["econo"] = acState.econo;
   root["lowNoise"] = acState.lowNoise;
   root["heatTenC"] =  acState.heatTenC;
@@ -1507,7 +1627,20 @@ void setup() {
   delay(200);
   // Set up what we want to send. See ir_Fujitsu.cpp for all the options.
   // See `fujitsu_ac_remote_model_t` in `ir_Fujitsu.h` for a list of models.
-  irsend.setModel(ARREB1E);
+  if (deviceSettings.irModel == 1){
+    irsend.setModel(ARRAH2E);}
+  else if (deviceSettings.irModel == 2){
+    irsend.setModel(ARDB1);}
+  else if (deviceSettings.irModel == 3){
+    irsend.setModel(ARREB1E);}
+  else if (deviceSettings.irModel == 4){
+    irsend.setModel(ARJW2);}
+  else if (deviceSettings.irModel == 5){
+    irsend.setModel(ARRY4);}
+  else if (deviceSettings.irModel == 6){
+    irsend.setModel(ARREW4E);}
+    
+  
   delay(500);
   
   WiFiManager wifiManager;

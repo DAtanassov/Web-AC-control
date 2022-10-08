@@ -4,6 +4,8 @@ var setTemp;
 var myModal;
 var needUpdate = false;
 
+$("#settingsModal").remove();
+
 function updateVars() {
   
   var myModal = document.getElementById('settingsModal');
@@ -15,11 +17,13 @@ function updateVars() {
       updateStatus();
   });
   
+  getSettings();
   updateStatus();
   
 }
 
 function updateStatus() {
+  
   $.ajax({
     type: 'GET',
     url: "state",
@@ -53,11 +57,9 @@ function updateElements(){
     $("#power-btn").addClass("btn-danger");
   }
   if (state["swingvert"] === true) {
-    $("#swingvert").text("Swing ON");
     $("#swing-btn").removeClass("btn-outline-info");
     $("#swing-btn").addClass("btn-info");
   } else {
-    $("#swingvert").text("Swing OFF");
     $("#swing-btn").removeClass("btn-info");
     $("#swing-btn").addClass("btn-outline-info");
   }
@@ -83,6 +85,19 @@ function updateElements(){
   } else {
     $("#heat10-btn").removeClass("btn-info");
     $("#heat10-btn").addClass("btn-outline-info");
+  }
+  if (!((settings["irModel"] === 1) || (settings["irModel"] === 4))) {
+    $("#swingH-btn").remove();
+    $("#stepHor-btn").remove();
+    //$("#swingH-btn").removeClass("d-none");
+    //$("#stepHor-btn").removeClass("d-none");
+  }
+  if (state["swinghor"] === true) {
+    $("#swingH-btn").removeClass("btn-outline-info");
+    $("#swingH-btn").addClass("btn-info");
+  } else {
+    $("#swingH-btn").removeClass("btn-info");
+    $("#swingH-btn").addClass("btn-outline-info");
   }
   setModeColor(state["mode"]);
   setFanColor(state["fan"]);
@@ -239,12 +254,10 @@ function temp_onclick(temp) {
 function swing_onclick() {
   if (state["swingvert"]) {
     state["swingvert"] = false;
-    $("#swingvert").text("Swing OFF");
     $("#swing-btn").removeClass("btn-info");
     $("#swing-btn").addClass("btn-outline-info");
   } else {
     state["swingvert"] = true;
-    $("#swingvert").text("Swing ON");
     $("#swing-btn").removeClass("btn-outline-info");
     $("#swing-btn").addClass("btn-info");
   }
@@ -255,7 +268,6 @@ function swing_onclick() {
 
 function StepV_onclick() {
   state["swingvert"] = false;
-  $("#swingvert").text("Swing OFF");
   $("#swing-btn").removeClass("btn-info");
   $("#swing-btn").addClass("btn-outline-info");
   if (state["power"] === true) {
@@ -318,6 +330,31 @@ function heat10_onclick() {
   }
 }
 
+function swingH_onclick() {
+  if (state["swinghor"]) {
+    state["swinghor"] = false;
+    $("#swingH-btn").removeClass("btn-info");
+    $("#swingH-btn").addClass("btn-outline-info");
+  } else {
+    state["swinghor"] = true;
+    $("#swingH-btn").removeClass("btn-outline-info");
+    $("#swingH-btn").addClass("btn-info");
+  }
+  if (state["power"] === true) {
+    postData(state, "state");
+  }
+}
+
+function StepH_onclick() {
+  state["swinghor"] = false;
+  $("#swingH-btn").removeClass("btn-info");
+  $("#swingH-btn").addClass("btn-outline-info");
+  if (state["power"] === true) {
+    stepVState = {"steph": true, "swinghor":false};
+    postData(stepVState, "steph");
+  }
+}
+
 // Settings Modal Form
 
 function getSettings() {
@@ -363,20 +400,31 @@ function settingsUpdateElements(){
 }
 
 function setSettings() {
-
+  
   settings["deviceName"] = $("#deviceName").val();
   settings["wifiPass"] = $("#wifiPass").val();
-  settings["autoupdate"] = $("#autoupdate").is(':checked') ? true : false;
+  settings["wifiChannel"] = parseInt($("#wifiChannel").val(), 10);
+  settings["startAP"] = $("#startAP").is(':checked') ? true : false;
+  settings["hideSSID"] = $("#hideSSID").is(':checked') ? true : false;    
+  settings["enableIRRecv"] = $("#enableIRRecv").is(':checked') ? true : false;
+  // Sync
   settings["synchronise"] = $("#synchronise").is(':checked') ? true : false;
   settings["syncMe"] = $("#syncMe").is(':checked') ? true : false;
-  settings["updSvr"] = $("#updSvr").val();
-  settings["updSvrPort"] = parseInt($("#updSvrPort").val(), 10);
   settings["innerDoor"] = $("#innerDoor").is(':checked') ? true : false;
   settings["outerDoor"] = $("#outerDoor").is(':checked') ? true : false;
-  settings["startAP"] = $("#startAP").is(':checked') ? true : false;
-  settings["hideSSID"] = $("#hideSSID").is(':checked') ? true : false;
-  settings["wifiChannel"] = parseInt($("#wifiChannel").val(), 10);
-  settings["enableIRRecv"] = $("#enableIRRecv").is(':checked') ? true : false;
+  // OTA
+  settings["autoupdate"] = $("#autoupdate").is(':checked') ? true : false;
+  settings["updSvr"] = $("#updSvr").val();
+  settings["updSvrPort"] = parseInt($("#updSvrPort").val(), 10);
+  // MQTT
+  settings["useMQTT"] = $("#useMQTT").is(':checked') ? true : false;
+  settings["mqtt_broker"] = $("#mqtt_broker").val();
+  settings["mqtt_port"] = parseInt($("#mqtt_port").val(), 10);
+  settings["mqtt_topic"] = $("#mqtt_topic").val();
+  settings["mqtt_username"] = $("#mqtt_username").val();
+  settings["mqtt_password"] = $("#mqtt_password").val();
+  // Model
+  settings["irModel"] = parseInt($("#irModel").val(), 10);
 
   postData(settings, "settings");
   needUpdate = true;

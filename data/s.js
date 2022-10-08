@@ -125,6 +125,8 @@ function setSettings() {
     settings["mqtt_topic"] = $("#mqtt_topic").val();
     settings["mqtt_username"] = $("#mqtt_username").val();
     settings["mqtt_password"] = $("#mqtt_password").val();
+    // Model
+    settings["irModel"] = parseInt($("#irModel").val(), 10);
 
     postData(settings, "settings");
 }

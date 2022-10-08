@@ -1,13 +1,11 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset='utf-8'>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0"
-    ><!--meta http-equiv='X-UA-Compatible' content='IE=edge'-->
+    <meta http-equiv="Expires" content="0">    
+    <!--meta http-equiv='X-UA-Compatible' content='IE=edge'-->
     
     <title>AC WiFi IR Control</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -65,7 +63,7 @@
                         </div>
                         <!--Temperature-->
                         <div class="btn-group-vertical">
-                            <button type="button" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp" onclick='updateStatus();' style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b id="target_temp"> ~ °C</b></button>
+                            <button type="button" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp" onclick='getSettings();updateStatus();' style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b id="target_temp"> ~ °C</b></button>
                             <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_up" onclick='temp_onclick(1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Up"src="chevron-up.svg" width="23px" height="26px"></button>
                             <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_down" onclick='temp_onclick(-1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Down"src="chevron-down.svg" width="23px" height="26px"></button>
                         </div>
@@ -95,18 +93,22 @@
                         <button type="button" id="heat10-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='heat10_onclick();'><b style="font-size:1.2em; color: black;" id="heat10">10°C HEAT</b></button>
                         <!--econo-->
                         <button type="button" id="econo-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='econo_onclick();'><b style="font-size:1.2em; color: black;" id="econo">Economy</b></button>
-                        <!--Low Noise-->
-                        <button type="button" id="lowNoise-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='lowNoise_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Low Noise</b></button>
+                        <!--Swing Vertical-->
+                        <button type="button" id="swing-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='swing_onclick();'><b style="font-size:1.2em; color: black;" id="swingvert">Swing V</b></button>
+                        <!--Swing Horizontal-->
+                        <button type="button" id="swingH-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='swingH_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Swing H</b></button>
                     </div>
                 </div>
                 <div class="col-auto">
                     <div class="btn-group-vertical float-right button-wrapper clearfix" role="group" aria-label="Vertical button group">
                         <!--POWERFUL-->
                         <button type="button" id="turbo-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='turbo_onclick();'><b style="font-size:1.2em; color: black;" id="turbo">Powerful</b></button>
-                        <!--Swing-->
-                        <button type="button" id="swing-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='swing_onclick();'><b style="font-size:1.2em; color: black;" id="swingvert">Swing OFF</b></button>
-                        <!--Swing Step-->
+                        <!--Low Noise-->
+                        <button type="button" id="lowNoise-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='lowNoise_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Low Noise</b></button>
+                        <!--Swing Step Vertical-->
                         <button type="button" id="stepVert-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='StepV_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">V Step Set</b></button>
+                        <!--Swing Step Horiontal-->
+                        <button type="button" id="stepHor-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='StepH_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">H Step Set</b></button>
                     </div>
                 </div>
 
@@ -117,7 +119,7 @@
     </div>
 
     <!-- Settings -->
-
+    <!--
     <div class="modal fade" id="settingsModal" aria-labelledby="settingsModalLabel" aria-hidden="true">
         
         <div class="modal-dialog">
@@ -182,40 +184,69 @@
                         <div class="row">
     
                             <div class="input-group mb-3">
+                                <label class="input-group-text d-none d-sm-block" for="irModel">IR Model</label>
+                                <select class="form-select" id="irModel" name="irModel">
+                                    <option value="1">1 (ARRAH2E)</option>
+                                    <option value="2">2 (ARDB1)</option>
+                                    <option value="3">3 (ARREB1E)</option>
+                                    <option value="4">4 (ARJW2)</option>
+                                    <option value="5">5 (ARRY4)</option>
+                                    <option value="6">6 (ARREW4E)</option>
+                                </select>
                                 <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="autoupdate" name="autoupdate">
-                                    Autoupdate
+                                    <input class="form-check-input mt-0" type="checkbox" id="autoupdate" name="autoupdate"> Autoupdate
                                 </div>
                                 <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="enableIRRecv"
-                                        name="enableIRRecv"> Enable IRRecv
+                                    <input class="form-check-input mt-0" type="checkbox" id="enableIRRecv" name="enableIRRecv"> Enable IRRecv
+                                </div>
+                                <div class="input-group-text" hidden>
+                                    <input class="form-check-input mt-0" type="checkbox" id="synchronise" name="synchronise" disabled> Synchronize other devices 
                                 </div>
                                 <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="synchronise" name="synchronise"
-                                        disabled> Synchronize other devices
+                                    <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe"> Synchronize
                                 </div>
                                 <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe">
-                                    Synchronize with other devices
+                                    <input class="form-check-input mt-0" type="checkbox" id="useMQTT" name="useMQTT"> Use MQTT
                                 </div>
                             </div>
-                            <div class="input-group mb-3">
+                            <div class="input-group mb-3" hidden>
                                 <span class="input-group-text">Observe doors</span>
                                 <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="innerDoor" name="innerDoor"
-                                        disabled> Inners
+                                    <input class="form-check-input mt-0" type="checkbox" id="innerDoor" name="innerDoor" disabled> Inners
                                 </div>
                                 <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="outerDoor" name="outerDoor"
-                                        disabled> Outers
+                                    <input class="form-check-input mt-0" type="checkbox" id="outerDoor" name="outerDoor" disabled> Outers
                                 </div>
                             </div>
     
                         </div>
-    
+
+                        <div class="row" id="mqttGroup">
+
+                            <div class="input-group mb-3">
+                                <span class="input-group-text d-none d-sm-block">MQTT Brocker</span>
+                                <input class="form-control" aria-label="MQTT server" placeholder="MQTT server" type="text" maxlength="32" id="mqtt_broker" name="mqtt_broker">
+                                <span class="input-group-text d-none d-sm-block">:</span>
+                                <input class="form-control" aria-label="MQTT server port" placeholder="MQTT server port" type="number" maxlength="5" min="1" max="65535" id="mqtt_port" name="mqtt_port">
+                            </div>
+            
+                            <div class="input-group mb-3">
+                                <span class="input-group-text d-none d-sm-block">MQTT Topic</span>
+                                <input class="form-control" aria-label="MQTT Topic" placeholder="MQTT Topic" type="text" maxlength="32" id="mqtt_topic" name="mqtt_topic">
+                            </div>
+            
+                            <div class="input-group mb-3">
+                                <span class="input-group-text d-none d-sm-block">MQTT Username</span>
+                                <input class="form-control" aria-label="MQTT Username" placeholder="MQTT Username" type="text" maxlength="32" id="mqtt_username" name="mqtt_username">
+                                <span class="input-group-text d-none d-sm-block">MQTT Password</span>
+                                <input class="form-control" aria-label="MQTT Password" placeholder="MQTT Password" type="password" maxlength="32" id="mqtt_password" name="mqtt_password">
+                            </div>
+            
+                        </div>
+
                         <div class="modal-footer">
                             <div class="input-group mb-3">
-                                <!-- <button type="button" class="form-control btn btn-outline-secondary text-nowrap" data-bs-dismiss="modal">Close</button> -->
+                                <button type="button" class="form-control btn btn-outline-secondary text-nowrap" data-bs-dismiss="modal">Close</button>
                                 <button type="button" class="form-control btn btn-outline-primary text-nowrap" onclick="getSettings();">Read</button>
                                 <button type="button" class="form-control btn btn-outline-success text-nowrap" onclick="setSettings();">Save</button>
                                 <button type="button" class="form-control btn btn-outline-danger text-nowrap" onclick="devRestart();">Restart RC</button>
@@ -228,6 +259,7 @@
         </div>
 
     </div>
+    -->
 
     <script>$(document).ready(updateVars);</script>
 </body>
