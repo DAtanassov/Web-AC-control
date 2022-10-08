@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,7 +40,7 @@
             
             <div class="row">
                 <div class="text-center">
-                    <h5>AC WiFi IR Control Settings</h5>
+                    <h5><a href="/" target="_self">AC WiFi IR Control Settings</a></h5>
                 </div>
             </div>
 
@@ -98,14 +99,18 @@
                     <div class="input-group-text">
                         <input class="form-check-input mt-0" type="checkbox" id="enableIRRecv" name="enableIRRecv"> Enable IRRecv
                     </div>
-                    <div class="input-group-text">
+                    <div class="input-group-text" hidden>
                         <input class="form-check-input mt-0" type="checkbox" id="synchronise" name="synchronise" disabled> Synchronize other devices 
                     </div>
                     <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe"> Synchronize with other devices
+                        <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe"> Synchronize
                     </div>
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" type="checkbox" id="useMQTT" name="useMQTT"> Use MQTT
+                    </div>
+                    
                 </div>
-                <div class="input-group mb-3">
+                <div class="input-group mb-3" hidden>
                     <span class="input-group-text">Observe doors</span>
                     <div class="input-group-text">
                         <input class="form-check-input mt-0" type="checkbox" id="innerDoor" name="innerDoor" disabled> Inners
@@ -117,12 +122,35 @@
 
             </div>
             
+            <div class="row" id="mqttGroup">
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text d-none d-sm-block">MQTT Brocker</span>
+                    <input class="form-control" aria-label="MQTT server" placeholder="MQTT server" type="text" maxlength="32" id="mqtt_broker" name="mqtt_broker">
+                    <span class="input-group-text d-none d-sm-block">:</span>
+                    <input class="form-control" aria-label="MQTT server port" placeholder="MQTT server port" type="number" maxlength="5" min="1" max="65535" id="mqtt_port" name="mqtt_port">
+                </div>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text d-none d-sm-block">MQTT Topic</span>
+                    <input class="form-control" aria-label="MQTT Topic" placeholder="MQTT Topic" type="text" maxlength="32" id="mqtt_topic" name="mqtt_topic">
+                </div>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text d-none d-sm-block">MQTT Username</span>
+                    <input class="form-control" aria-label="MQTT Username" placeholder="MQTT Username" type="text" maxlength="32" id="mqtt_username" name="mqtt_username">
+                    <span class="input-group-text d-none d-sm-block">MQTT Password</span>
+                    <input class="form-control" aria-label="MQTT Password" placeholder="MQTT Password" type="password" maxlength="32" id="mqtt_password" name="mqtt_password">
+                </div>
+
+            </div>
+
             <div class="row">
                 
                 <div class="input-group mb-3">
                     <button type="button" class="form-control btn btn-outline-primary" onclick="getSettings();">Read</button>
                     <button type="button" class="form-control btn btn-outline-success" onclick="setSettings();">Save</button>
-                    <button type="button" class="form-control btn btn-outline-danger" onclick="devRestart();">Restart RC</button>
+                    <button type="button" class="form-control btn btn-outline-danger" onclick="devRestart();">Restart</button>
                 </div>
 
             </div>
@@ -130,5 +158,6 @@
         </div>
         
     </div>
+    <script>$(document).ready(getSettings);</script>
 </body>
 </html>
