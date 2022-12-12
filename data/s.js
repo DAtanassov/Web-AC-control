@@ -1,7 +1,7 @@
 var settings = {};
 
 function getSettings() {
-  $.ajax({
+  /* $.ajax({
     type: 'GET',
     url: "settings",
     dataType: "json",
@@ -20,6 +20,15 @@ function getSettings() {
     },
     timeout: 1000
     //,cache: false
+  }); */
+
+  fetch('settings')
+  .then(async(response) => {
+    settings = await response.json();
+    updateElements();
+  })
+  .catch(error => {
+    console.error(error);
   });
 }
 
@@ -48,7 +57,7 @@ function updateElements(){
   }
 }
 
-function BeforeSend(request) {
+/* function BeforeSend(request) {
 	
 	$.blockUI({ css: { 
 		border: 'none', 
@@ -65,13 +74,11 @@ function BeforeSend(request) {
 function Success(data, status, request) {
       
   setTimeout($.unblockUI, 0);
-  /*
-  setTimeout(function() { 
-      $.unblockUI({ 
-          onUnblock: function(){ alert("Success"); } 
-      }); 
-    }, 2000);
-    */
+  // setTimeout(function() { 
+  //     $.unblockUI({ 
+  //         onUnblock: function(){ alert("Success"); } 
+  //     }); 
+  //   }, 2000);
 }
 
 function onError(request, status, error) {
@@ -81,10 +88,10 @@ function onError(request, status, error) {
         onUnblock: function(){ alert("error: " + request.responseText); } 
     }); 
   }, 2000);
-}
+} */
 
 function postData(t, p) {
-  var e = new XMLHttpRequest;
+  /* var e = new XMLHttpRequest;
   e.addEventListener('loadstart', BeforeSend);
   //e.addEventListener('load', handleEvent);
   e.addEventListener('loadend', Success);
@@ -98,7 +105,17 @@ function postData(t, p) {
   e.open("POST", p, !0);
   e.setRequestHeader("Content-Type", "application/json");
   console.log(JSON.stringify(t));
-  e.send(JSON.stringify(t));
+  e.send(JSON.stringify(t)); */
+
+  fetch(p, {method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify(t)})
+  .catch(error => {
+    console.error(error);
+  });
 }
 
 function setSettings() {

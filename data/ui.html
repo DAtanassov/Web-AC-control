@@ -10,14 +10,14 @@
     <title>AC WiFi IR Control</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     
-    <link rel='shortcut icon' type='image/x-icon' href='favicon.png' />
+    <link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
     
     <link rel='stylesheet' type='text/css' href='main.min.css'>
     <link rel='stylesheet' type='text/css' href='bootstrap.min.css'>
 
     <script type="text/javascript" src="jquery-latest.min.js"></script>
-    <script type="text/javascript" src='jquery.blockUI.min.js'></script>
-    <script type="text/javascript" src='bootstrap.bundle.min.js'></script>
+    <!--script type="text/javascript" src='jquery.blockUI.min.js'></script-->
+    <!--script type="text/javascript" src='bootstrap.bundle.min.js'></script-->
     <script type="text/javascript" src='main.min.js'></script>
     
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -36,7 +36,6 @@
         <div class="container-fluid">
             <div class="row row-no-gutters justify-content-center">
                 <div class="text-center">
-                    <!-- <button class='btn btn-link text-nowrap' style='font-size:1.25em;font-weight:bold;color:black;' type='button' id='devName' data-bs-toggle='modal' data-bs-target='#settingsModal' data-bs-whatever='jsonState'>AC WiFi IR Control</button> -->
                     <h5><a id="devName" href="s.html" target="_self">AC WiFi IR Control</a></h5>
                 </div>
             </div>
@@ -46,11 +45,11 @@
                 <div class="col-auto" style="max-width: 80px;">
                     <!-- Mode -->
                     <div class="btn-group-vertical float-left" aria-label="Mode button group">
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_auto" onclick='mode_onclick(0);'><img alt="Auto"src="font.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_cooling" onclick='mode_onclick(1);'><img alt="Cooling"src="snowflake.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_dehum" onclick='mode_onclick(2);'><img alt="Dehumidifying"src="tint.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_fan" onclick='mode_onclick(3);'><img alt="Fan"src="retweet.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_heating" onclick='mode_onclick(4);'><img alt="Heating"src="sun.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_auto" onclick='mode_onclick(0);'><img alt="Auto" src="font.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_cooling" onclick='mode_onclick(1);'><img alt="Cooling" src="snowflake.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_dehum" onclick='mode_onclick(2);'><img alt="Dehumidifying" src="tint.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_fan" onclick='mode_onclick(3);'><img alt="Fan" src="retweet.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_heating" onclick='mode_onclick(4);'><img alt="Heating" src="sun.svg" width="28px" height="32px"></button>
                     </div>
                 </div>
 
@@ -59,13 +58,13 @@
                     <div class="btn-group-vertical" aria-label="Power and Temperature group">
                         <!-- ON/OFF -->
                         <div class="btn-group button-wrapper">
-                            <button type="button" id="power-btn" class="btn btn-danger text-nowrap" onclick='power_onclick();'><img alt="Power"src="power-off.svg" width="25px" height="25px" style="font-size:1.6em;color:black;"><b style="font-size:1.5em;" id="power"> OFF</b></button>
+                            <button type="button" id="power-btn" class="btn btn-danger text-nowrap" onclick='power_onclick();'><img alt="Power" src="power-off.svg" width="25px" height="25px" style="font-size:1.6em;color:black;"><b style="font-size:1.5em;" id="power"> OFF</b></button>
                         </div>
                         <!--Temperature-->
                         <div class="btn-group-vertical">
-                            <button type="button" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp" onclick='getSettings();updateStatus();' style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b id="target_temp"> ~ °C</b></button>
-                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_up" onclick='temp_onclick(1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Up"src="chevron-up.svg" width="23px" height="26px"></button>
-                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_down" onclick='temp_onclick(-1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Down"src="chevron-down.svg" width="23px" height="26px"></button>
+                            <button type="button" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp" onclick='updateStatus();' style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b id="target_temp"> ~ °C</b></button>
+                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_up" onclick='temp_onclick(1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Up" src="chevron-up.svg" width="23px" height="26px"></button>
+                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_down" onclick='temp_onclick(-1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Down" src="chevron-down.svg" width="23px" height="26px"></button>
                         </div>
                     </div>
                 </div>
@@ -73,11 +72,11 @@
                 <div class="col-auto" style="max-width: 80px;">
                     <!-- Fan -->
                     <div class="btn-group-vertical float-right" aria-label="Fan button group">
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_auto" onclick='fan_onclick(0);'><img alt="Auto"src="font.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_high" onclick='fan_onclick(4);'><img alt="High"src="level_4_off.svg" width="28px" height="32px" id="fan_lvl_4"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_med" onclick='fan_onclick(3);'><img alt="Medium"src="level_3_off.svg" width="28px" height="32px" id="fan_lvl_3"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_low" onclick='fan_onclick(2);'><img alt="Low"src="level_2_off.svg" width="28px" height="32px" id="fan_lvl_2"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_quiet" onclick='fan_onclick(1);'><img alt="Quiet"src="level_1_off.svg" width="28px" height="32px" id="fan_lvl_1"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_auto" onclick='fan_onclick(0);'><img alt="Auto" src="font.svg" width="28px" height="32px"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_high" onclick='fan_onclick(4);'><img alt="High" src="level_4_off.svg" width="28px" height="32px" id="fan_lvl_4"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_med" onclick='fan_onclick(3);'><img alt="Medium" src="level_3_off.svg" width="28px" height="32px" id="fan_lvl_3"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_low" onclick='fan_onclick(2);'><img alt="Low" src="level_2_off.svg" width="28px" height="32px" id="fan_lvl_2"></button>
+                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_quiet" onclick='fan_onclick(1);'><img alt="Quiet" src="level_1_off.svg" width="28px" height="32px" id="fan_lvl_1"></button>
                     </div>
                     
                 </div>
@@ -118,149 +117,6 @@
 
     </div>
 
-    <!-- Settings -->
-    <!--
-    <div class="modal fade" id="settingsModal" aria-labelledby="settingsModalLabel" aria-hidden="true">
-        
-        <div class="modal-dialog">
-            
-            <div class="modal-content">
-                
-                <div class="modal-header">
-                    <h5 class="modal-title" id="settingsModalLabel">AC WiFi IR Control Settings</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-    
-                <div class="modal-body">
-                    <div class="container-fluid">
-    
-                        <div class="row">
-    
-                            <div class="input-group mb-3">
-                                <span class="input-group-text d-none d-sm-block">Device name / SSID</span>
-                                <input class="form-control" aria-label="Device name / SSID" placeholder="Device name / SSID"
-                                    type="text" maxlength="32" id="deviceName" name="deviceName">
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="startAP" name="startAP"> AP
-                                </div>
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="hideSSID" name="hideSSID"> Hide
-                                </div>
-                            </div>
-    
-                            <div class="input-group mb-3">
-                                <span class="input-group-text d-none d-sm-block">WiFi pass</span>
-                                <input class="form-control" aria-label="WiFi pass" placeholder="WiFi pass" type="password" maxlength="32" id="wifiPass" name="wifiPass">
-                                <label class="input-group-text d-none d-sm-block" for="wifiChannel">Ch</label>
-                                <select class="form-select" id="wifiChannel" name="wifiChannel">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
-                                    <option value="10">10</option>
-                                    <option value="11">11</option>
-                                    <option value="12">12</option>
-                                    <option value="13">13</option>
-                                </select>
-                            </div>
-    
-                            <div class="input-group mb-3">
-                                <span class="input-group-text d-none d-sm-block">Address for update</span>
-                                <input class="form-control" aria-label="Server" placeholder="Server" type="text"
-                                    maxlength="32" id="updSvr" name="updSvr">
-                                <span class="input-group-text d-none d-sm-block">:</span>
-                                <input class="form-control" aria-label="Port" placeholder="Port" type="number" maxlength="5"
-                                    min="1" max="65535" id="updSvrPort" name="updSvrPort">
-                                <button type="button" class="btn btn-outline-warning" onclick="checkUPD();">Check</button>
-                            </div>
-    
-                        </div>
-    
-                        <div class="row">
-    
-                            <div class="input-group mb-3">
-                                <label class="input-group-text d-none d-sm-block" for="irModel">IR Model</label>
-                                <select class="form-select" id="irModel" name="irModel">
-                                    <option value="1">1 (ARRAH2E)</option>
-                                    <option value="2">2 (ARDB1)</option>
-                                    <option value="3">3 (ARREB1E)</option>
-                                    <option value="4">4 (ARJW2)</option>
-                                    <option value="5">5 (ARRY4)</option>
-                                    <option value="6">6 (ARREW4E)</option>
-                                </select>
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="autoupdate" name="autoupdate"> Autoupdate
-                                </div>
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="enableIRRecv" name="enableIRRecv"> Enable IRRecv
-                                </div>
-                                <div class="input-group-text" hidden>
-                                    <input class="form-check-input mt-0" type="checkbox" id="synchronise" name="synchronise" disabled> Synchronize other devices 
-                                </div>
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe"> Synchronize
-                                </div>
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="useMQTT" name="useMQTT"> Use MQTT
-                                </div>
-                            </div>
-                            <div class="input-group mb-3" hidden>
-                                <span class="input-group-text">Observe doors</span>
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="innerDoor" name="innerDoor" disabled> Inners
-                                </div>
-                                <div class="input-group-text">
-                                    <input class="form-check-input mt-0" type="checkbox" id="outerDoor" name="outerDoor" disabled> Outers
-                                </div>
-                            </div>
-    
-                        </div>
-
-                        <div class="row" id="mqttGroup">
-
-                            <div class="input-group mb-3">
-                                <span class="input-group-text d-none d-sm-block">MQTT Brocker</span>
-                                <input class="form-control" aria-label="MQTT server" placeholder="MQTT server" type="text" maxlength="32" id="mqtt_broker" name="mqtt_broker">
-                                <span class="input-group-text d-none d-sm-block">:</span>
-                                <input class="form-control" aria-label="MQTT server port" placeholder="MQTT server port" type="number" maxlength="5" min="1" max="65535" id="mqtt_port" name="mqtt_port">
-                            </div>
-            
-                            <div class="input-group mb-3">
-                                <span class="input-group-text d-none d-sm-block">MQTT Topic</span>
-                                <input class="form-control" aria-label="MQTT Topic" placeholder="MQTT Topic" type="text" maxlength="32" id="mqtt_topic" name="mqtt_topic">
-                            </div>
-            
-                            <div class="input-group mb-3">
-                                <span class="input-group-text d-none d-sm-block">MQTT Username</span>
-                                <input class="form-control" aria-label="MQTT Username" placeholder="MQTT Username" type="text" maxlength="32" id="mqtt_username" name="mqtt_username">
-                                <span class="input-group-text d-none d-sm-block">MQTT Password</span>
-                                <input class="form-control" aria-label="MQTT Password" placeholder="MQTT Password" type="password" maxlength="32" id="mqtt_password" name="mqtt_password">
-                            </div>
-            
-                        </div>
-
-                        <div class="modal-footer">
-                            <div class="input-group mb-3">
-                                <button type="button" class="form-control btn btn-outline-secondary text-nowrap" data-bs-dismiss="modal">Close</button>
-                                <button type="button" class="form-control btn btn-outline-primary text-nowrap" onclick="getSettings();">Read</button>
-                                <button type="button" class="form-control btn btn-outline-success text-nowrap" onclick="setSettings();">Save</button>
-                                <button type="button" class="form-control btn btn-outline-danger text-nowrap" onclick="devRestart();">Restart RC</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        
-        </div>
-
-    </div>
-    -->
-
-    <script>$(document).ready(updateVars);</script>
+    <script>$(document).ready(updateAll);</script>
 </body>
 </html>

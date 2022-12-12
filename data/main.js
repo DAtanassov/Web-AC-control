@@ -1,52 +1,61 @@
 var state = {};
 var settings = {};
 var setTemp;
-var myModal;
-var needUpdate = false;
-
-$("#settingsModal").remove();
-
-function updateVars() {
-  
-  var myModal = document.getElementById('settingsModal');
-  myModal.addEventListener('shown.bs.modal', function () {
-    getSettings();
-  });
-  myModal.addEventListener('hide.bs.modal', function () {
-    if (needUpdate)
-      updateStatus();
-  });
-  
-  getSettings();
-  updateStatus();
-  
-}
 
 function updateStatus() {
-  
-  $.ajax({
-    type: 'GET',
-    url: "state",
-    dataType: "json",
-    beforeSend: BeforeSend,
-    success: function(data, status, request) {
-      if (!data) {
-        return;
-      }
-      state = data;
-      updateElements();
-      Success(data, status, request);
-    },
-    error: function(request, status, error) {
-      console.log('error getting state');
-      onError(request, status, error);
-    },
-    timeout: 1000
-    //,cache: false
+    
+  fetch('state')
+  .then(async(response) => {
+    state = await response.json();
+    updateElements();
+  })
+  .catch(error => {
+    console.error(error);
   });
+    
+  /* var xhr = new XMLHttpRequest();     
+  xhr.open("GET", "state", false);
+  xhr.send(null);
+  if (xhr.status === 200) {
+    state = JSON.parse(xhr.responseText);
+    updateElements();
+  } */
+  
 }
 
-function updateElements(){
+function updateAll() {
+   
+  Promise.all([
+    fetch('settings'),
+    fetch('state')
+  ])
+  .then(async([res1, res2]) => {
+    settings = await res1.json();
+    state = await res2.json();
+    updateElements();
+  })
+  .catch(error => {
+    console.error(error);
+  });  
+
+  
+  /* var xhr = new XMLHttpRequest();
+  xhr.open("GET", "settings", false);
+  xhr.send(null);
+  if (xhr.status === 200) {
+    settings = JSON.parse(xhr.responseText);
+  }
+  var xhr = new XMLHttpRequest();     
+  xhr.open("GET", "state", false);
+  xhr.send(null);
+  if (xhr.status === 200) {
+    state = JSON.parse(xhr.responseText);
+    updateElements();
+  } */
+  
+}
+
+function updateElements() {
   if (state["power"] === true) {
     $("#power").text(" ON");
     $("#power-btn").addClass("btn-success");
@@ -89,8 +98,6 @@ function updateElements(){
   if (!((settings["irModel"] === 1) || (settings["irModel"] === 4))) {
     $("#swingH-btn").remove();
     $("#stepHor-btn").remove();
-    //$("#swingH-btn").removeClass("d-none");
-    //$("#stepHor-btn").removeClass("d-none");
   }
   if (state["swinghor"] === true) {
     $("#swingH-btn").removeClass("btn-outline-info");
@@ -105,7 +112,7 @@ function updateElements(){
   $("#devName").text(state["deviceName"]);
 }
 
-function BeforeSend(request) {
+/* function BeforeSend(request) {
 	
 	$.blockUI({ css: { 
 		border: 'none', 
@@ -122,12 +129,12 @@ function BeforeSend(request) {
 function Success(data, status, request) {
   
   setTimeout($.unblockUI, 0);
-	/*setTimeout(function() { 
-    $.unblockUI({ 
-        onUnblock: function(){ alert(data); } 
-    }); 
-  }, 2000); 
-  */
+	// setTimeout(function() { 
+  //   $.unblockUI({ 
+  //       onUnblock: function(){ alert(data); } 
+  //   }); 
+  // }, 2000); 
+  
 }
 
 function onError(request, status, error) {
@@ -137,10 +144,10 @@ function onError(request, status, error) {
         onUnblock: function(){ alert("error: " + request.responseText); } 
     }); 
   }, 2000);
-}
+} */
 
 function postData(t, p) {
-  
+  /* 
   var e = new XMLHttpRequest;
   //e.addEventListener('loadstart', BeforeSend);
   //e.addEventListener('load', handleEvent);
@@ -150,13 +157,24 @@ function postData(t, p) {
   //e.addEventListener('abort', handleEvent);
   //e.timeout = 2000;
   e.open("POST", p, !0);
-  e.setRequestHeader("Content-Type", "application/json");
+  e.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
   //e.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
   // fallbacks for IE and older browsers:
   //e.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
   //e.setRequestHeader("Pragma", "no-cache");
-  console.log(JSON.stringify(t));
+  //console.log(JSON.stringify(t));
   e.send(JSON.stringify(t));
+ */
+  
+  fetch(p, {method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify(t)})
+  .catch(error => {
+    console.error(error);
+  });
 
 }
 
@@ -354,90 +372,3 @@ function StepH_onclick() {
     postData(stepVState, "steph");
   }
 }
-
-// Settings Modal Form
-
-function getSettings() {
-  $.ajax({
-    type: 'GET',
-    url: "settings",
-    dataType: "json",
-    success: function(data, status, request) {
-      if (!data) {
-        return;
-      }
-      settings = data;
-      settingsUpdateElements();
-    },
-    error: function(request, status, error) {
-      console.log('error getting settings');
-      alert("error: " + request.responseText);
-    },
-    timeout: 1000
-    //,cache: false
-  });
-  needUpdate = false;
-}
-
-function settingsUpdateElements(){
-  $.each(settings, function (name, val) {
-    var $el = $('[name="' + name + '"]'),
-        type = $el.attr('type');
-
-    switch (type) {
-        case 'checkbox':
-            $el.prop('checked', val);
-            break;
-        case 'radio':
-            $el.filter('[value="' + val + '"]').attr('checked', val);
-            break;
-        default:
-            $el.val(!$.isArray(val) ? [val] : val);
-    }
-    })
-  document.title = settings["deviceName"] + " (AC WiFi IR Control Settings v." + settings["version"] + ")";
-
-}
-
-function setSettings() {
-  
-  settings["deviceName"] = $("#deviceName").val();
-  settings["wifiPass"] = $("#wifiPass").val();
-  settings["wifiChannel"] = parseInt($("#wifiChannel").val(), 10);
-  settings["startAP"] = $("#startAP").is(':checked') ? true : false;
-  settings["hideSSID"] = $("#hideSSID").is(':checked') ? true : false;    
-  settings["enableIRRecv"] = $("#enableIRRecv").is(':checked') ? true : false;
-  // Sync
-  settings["synchronise"] = $("#synchronise").is(':checked') ? true : false;
-  settings["syncMe"] = $("#syncMe").is(':checked') ? true : false;
-  settings["innerDoor"] = $("#innerDoor").is(':checked') ? true : false;
-  settings["outerDoor"] = $("#outerDoor").is(':checked') ? true : false;
-  // OTA
-  settings["autoupdate"] = $("#autoupdate").is(':checked') ? true : false;
-  settings["updSvr"] = $("#updSvr").val();
-  settings["updSvrPort"] = parseInt($("#updSvrPort").val(), 10);
-  // MQTT
-  settings["useMQTT"] = $("#useMQTT").is(':checked') ? true : false;
-  settings["mqtt_broker"] = $("#mqtt_broker").val();
-  settings["mqtt_port"] = parseInt($("#mqtt_port").val(), 10);
-  settings["mqtt_topic"] = $("#mqtt_topic").val();
-  settings["mqtt_username"] = $("#mqtt_username").val();
-  settings["mqtt_password"] = $("#mqtt_password").val();
-  // Model
-  settings["irModel"] = parseInt($("#irModel").val(), 10);
-
-  postData(settings, "settings");
-  needUpdate = true;
-}
-
-function checkUPD() {
-  postData(null, "forceupdate");
-}
-
-function devRestart() {
-  postData(null, "reset");
-}
-
-// End Settings Modal Form
-
-//$(document).ready(updateVars);
