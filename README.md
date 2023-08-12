@@ -2,7 +2,7 @@
 
 This is just a web interface for the IRremoteESP8266 library.  
 
-![Web Gui Preview](https://github.com/DAtanassov/Web-AC-control/raw/master/printscreen.png)  
+![Web Gui Preview](https://github.com/DAtanassov/Web-AC-control/blob/main/printscreen.png)  
 
 ## Instructions:
 
