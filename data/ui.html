@@ -1,33 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset='utf-8'>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">    
-    <!--meta http-equiv='X-UA-Compatible' content='IE=edge'-->
-    
+    <meta http-equiv="Expires" content="0">
     <title>AC WiFi IR Control</title>
+    <meta name="description" content="AC WiFi IR Control">
+    <meta name="author" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    
-    <link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
-    
-    <link rel='stylesheet' type='text/css' href='main.min.css'>
-    <link rel='stylesheet' type='text/css' href='bootstrap.min.css'>
 
-    <script type="text/javascript" src="jquery-latest.min.js"></script>
-    <!--script type="text/javascript" src='jquery.blockUI.min.js'></script-->
-    <!--script type="text/javascript" src='bootstrap.bundle.min.js'></script-->
-    <script type="text/javascript" src='main.min.js'></script>
-    
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-        <script src="html5shiv.min.js"></script>
-        <script src="respond.min.js"></script>
-    <![endif]-->
-    
+    <link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
+
+    <link rel='stylesheet' type='text/css' href='main.css'>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src='main.js'></script>
+
 </head>
+
 <body>
 
     <!-- Main -->
@@ -41,44 +34,115 @@
             </div>
             <!-- Mode Power Temp Fan-->
             <div class="row row-no-gutters justify-content-center">
-                
-                <div class="col-auto" style="max-width: 80px;">
+
+                <div class="col-auto mode-column">
                     <!-- Mode -->
-                    <div class="btn-group-vertical float-left" aria-label="Mode button group">
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_auto" onclick='mode_onclick(0);'><img alt="Auto" src="font.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_cooling" onclick='mode_onclick(1);'><img alt="Cooling" src="snowflake.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_dehum" onclick='mode_onclick(2);'><img alt="Dehumidifying" src="tint.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_fan" onclick='mode_onclick(3);'><img alt="Fan" src="retweet.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info mode-btn" id="mode_heating" onclick='mode_onclick(4);'><img alt="Heating" src="sun.svg" width="28px" height="32px"></button>
+                    <div class="btn-group-vertical float-left">
+                        <button type="button" title="Auto" class="btn btn-outline-info mode-btn" id="mode_auto"
+                            onclick='mode_onclick(0);'>
+                            <svg width="28px" height="32px">
+                                <use xlink:href="imgsvg.svg#font">
+                            </svg>
+                        </button>
+                        <button type="button" title="Cooling" class="btn btn-outline-info mode-btn" id="mode_cooling"
+                            onclick='mode_onclick(1);'>
+                            <svg width="28px" height="32px">
+                                <use xlink:href="imgsvg.svg#snowflake">
+                            </svg>
+                        </button>
+                        <button type="button" title="Dehumidifying" class="btn btn-outline-info mode-btn"
+                            id="mode_dehum" onclick='mode_onclick(2);'>
+                            <svg width="28px" height="32px">
+                                <use xlink:href="imgsvg.svg#tint">
+                            </svg>
+                        </button>
+                        <button type="button" title="Fan" class="btn btn-outline-info mode-btn" id="mode_fan"
+                            onclick='mode_onclick(3);'>
+                            <svg width="28px" height="32px">
+                                <use xlink:href="imgsvg.svg#retweet">
+                            </svg>
+                        </button>
+                        <button type="button" title="Heating" class="btn btn-outline-info mode-btn" id="mode_heating"
+                            onclick='mode_onclick(4);'>
+                            <svg width="28px" height="32px">
+                                <use xlink:href="imgsvg.svg#sun">
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <div class="col-auto" style="max-width: 140px;">
+                <div class="col-auto center-column">
                     <!--Power ON/OFF Temperature-->
                     <div class="btn-group-vertical" aria-label="Power and Temperature group">
                         <!-- ON/OFF -->
                         <div class="btn-group button-wrapper">
-                            <button type="button" id="power-btn" class="btn btn-danger text-nowrap" onclick='power_onclick();'><img alt="Power" src="power-off.svg" width="25px" height="25px" style="font-size:1.6em;color:black;"><b style="font-size:1.5em;" id="power"> OFF</b></button>
+                            <button type="button" title="Power" id="power-btn" class="btn btn-danger text-nowrap"
+                                onclick='power_onclick();'>
+                                <svg width="25px" height="25px" style="font-size:1.6em;color:black;">
+                                    <use xlink:href="imgsvg.svg#power-off">
+                                </svg>
+                                <b style="font-size:1.5em;" id="power"> OFF</b>
+                            </button>
                         </div>
                         <!--Temperature-->
                         <div class="btn-group-vertical">
-                            <button type="button" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp" onclick='updateStatus();' style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b id="target_temp"> ~ °C</b></button>
-                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_up" onclick='temp_onclick(1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Up" src="chevron-up.svg" width="23px" height="26px"></button>
-                            <button type="button" class="btn btn-outline-info wing-btn text-nowrap" id="target_temp_down" onclick='temp_onclick(-1);' style="font-size:1.67em;padding-top:0px;padding-bottom:0px;"><img alt="Temp Down" src="chevron-down.svg" width="23px" height="26px"></button>
+                            <button type="button" title="Temperature" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp"
+                                onclick='updateStatus();'
+                                style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b
+                                    id="target_temp"> ~ °C</b></button>
+                            <button type="button" title="Temp Up" class="btn btn-outline-info wing-btn text-nowrap"
+                                id="target_temp_up" onclick='temp_onclick(1);'
+                                style="font-size:1.67em;padding-top:0px;padding-bottom:0px;">
+                                <svg width="23px" height="26px">
+                                    <use xlink:href="imgsvg.svg#chevron-up">
+                                </svg>
+                            </button>
+                            <button type="button" title="Temp Down" class="btn btn-outline-info wing-btn text-nowrap"
+                                id="target_temp_down" onclick='temp_onclick(-1);'
+                                style="font-size:1.67em;padding-top:0px;padding-bottom:0px;">
+                                <svg width="23px" height="26px">
+                                    <use xlink:href="imgsvg.svg#chevron-down">
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-auto" style="max-width: 80px;">
+                <div class="col-auto fan-column">
                     <!-- Fan -->
-                    <div class="btn-group-vertical float-right" aria-label="Fan button group">
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_auto" onclick='fan_onclick(0);'><img alt="Auto" src="font.svg" width="28px" height="32px"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_high" onclick='fan_onclick(4);'><img alt="High" src="level_4_off.svg" width="28px" height="32px" id="fan_lvl_4"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_med" onclick='fan_onclick(3);'><img alt="Medium" src="level_3_off.svg" width="28px" height="32px" id="fan_lvl_3"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_low" onclick='fan_onclick(2);'><img alt="Low" src="level_2_off.svg" width="28px" height="32px" id="fan_lvl_2"></button>
-                        <button type="button" class="btn btn-outline-info fan-btn" id="fan_quiet" onclick='fan_onclick(1);'><img alt="Quiet" src="level_1_off.svg" width="28px" height="32px" id="fan_lvl_1"></button>
+                    <div class="btn-group-vertical float-right">
+                        <button type="button" title="Auto" class="btn btn-outline-info fan-btn" id="fan_auto"
+                            onclick='fan_onclick(0);'>
+                            <svg width="28px" height="32px">
+                                <use xlink:href="imgsvg.svg#font">
+                            </svg>
+                        </button>
+                        <button type="button" title="High" class="btn btn-outline-info fan-btn" id="fan_high"
+                            onclick='fan_onclick(4);'>
+                            <svg id="level_4_off" width="28px" height="32px">
+                                <use id="fan_lvl_4" xlink:href="imgsvg.svg#level_4_off">
+                            </svg>
+                        </button>
+                        <button type="button" title="Medium" class="btn btn-outline-info fan-btn" id="fan_med"
+                            onclick='fan_onclick(3);'>
+                            <svg width="28px" height="32px">
+                                <use id="fan_lvl_3" xlink:href="imgsvg.svg#level_3_off">
+                            </svg>
+                        </button>
+                        <button type="button" title="Low" class="btn btn-outline-info fan-btn" id="fan_low"
+                            onclick='fan_onclick(2);'>
+                            <svg width="28px" height="32px">
+                                <use id="fan_lvl_2" xlink:href="imgsvg.svg#level_2_off">
+                            </svg>
+                        </button>
+                        <button type="button" title="Quiet" class="btn btn-outline-info fan-btn" id="fan_quiet"
+                            onclick='fan_onclick(1);'>
+                            <svg width="28px" height="32px">
+                                <use id="fan_lvl_1" xlink:href="imgsvg.svg#level_1_off">
+                            </svg>
+                        </button>
                     </div>
-                    
+
                 </div>
 
             </div> <!-- row -->
@@ -86,28 +150,46 @@
             <!--econo Low Noise Swing Set-->
             <div class="row row-no-gutters justify-content-center">
 
-                <div class="col-auto">
-                    <div class="btn-group-vertical float-left button-wrapper clearfix" role="group" aria-label="Vertical button group">
+                <div class="col-auto left-btn-column">
+                    <div class="btn-group-vertical float-left button-wrapper clearfix" role="group"
+                        aria-label="Vertical button group">
                         <!--10 °C HEAT-->
-                        <button type="button" id="heat10-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='heat10_onclick();'><b style="font-size:1.2em; color: black;" id="heat10">10°C HEAT</b></button>
+                        <button type="button" id="heat10-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='heat10_onclick();'><b style="font-size:1.2em; color: black;" id="heat10">10°C
+                                HEAT</b></button>
                         <!--econo-->
-                        <button type="button" id="econo-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='econo_onclick();'><b style="font-size:1.2em; color: black;" id="econo">Economy</b></button>
+                        <button type="button" id="econo-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='econo_onclick();'><b style="font-size:1.2em; color: black;"
+                                id="econo">Economy</b></button>
                         <!--Swing Vertical-->
-                        <button type="button" id="swing-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='swing_onclick();'><b style="font-size:1.2em; color: black;" id="swingvert">Swing V</b></button>
+                        <button type="button" id="swing-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='swing_onclick();'><b style="font-size:1.2em; color: black;" id="swingvert">Swing
+                                V</b></button>
                         <!--Swing Horizontal-->
-                        <button type="button" id="swingH-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='swingH_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Swing H</b></button>
+                        <button type="button" id="swingH-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='swingH_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Swing
+                                H</b></button>
                     </div>
                 </div>
-                <div class="col-auto">
-                    <div class="btn-group-vertical float-right button-wrapper clearfix" role="group" aria-label="Vertical button group">
+                <div class="col-auto right-btn-column">
+                    <div class="btn-group-vertical float-right button-wrapper clearfix" role="group"
+                        aria-label="Vertical button group">
                         <!--POWERFUL-->
-                        <button type="button" id="turbo-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='turbo_onclick();'><b style="font-size:1.2em; color: black;" id="turbo">Powerful</b></button>
+                        <button type="button" id="turbo-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='turbo_onclick();'><b style="font-size:1.2em; color: black;"
+                                id="turbo">Powerful</b></button>
                         <!--Low Noise-->
-                        <button type="button" id="lowNoise-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='lowNoise_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Low Noise</b></button>
+                        <button type="button" id="lowNoise-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='lowNoise_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Low
+                                Noise</b></button>
                         <!--Swing Step Vertical-->
-                        <button type="button" id="stepVert-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='StepV_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">V Step Set</b></button>
+                        <button type="button" id="stepVert-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='StepV_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">V Step
+                                Set</b></button>
                         <!--Swing Step Horiontal-->
-                        <button type="button" id="stepHor-btn" class="btn btn-outline-info text-nowrap footer-btn" onclick='StepH_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">H Step Set</b></button>
+                        <button type="button" id="stepHor-btn" class="btn btn-outline-info text-nowrap footer-btn"
+                            onclick='StepH_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">H Step
+                                Set</b></button>
                     </div>
                 </div>
 
@@ -119,4 +201,5 @@
 
     <script>$(document).ready(updateAll);</script>
 </body>
+
 </html>

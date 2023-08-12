@@ -3,56 +3,29 @@ var settings = {};
 var setTemp;
 
 function updateStatus() {
-    
   fetch('state')
-  .then(async(response) => {
+  .then(async (response) => {
     state = await response.json();
     updateElements();
   })
   .catch(error => {
     console.error(error);
   });
-    
-  /* var xhr = new XMLHttpRequest();     
-  xhr.open("GET", "state", false);
-  xhr.send(null);
-  if (xhr.status === 200) {
-    state = JSON.parse(xhr.responseText);
-    updateElements();
-  } */
-  
 }
 
 function updateAll() {
-   
   Promise.all([
     fetch('settings'),
     fetch('state')
   ])
-  .then(async([res1, res2]) => {
-    settings = await res1.json();
-    state = await res2.json();
-    updateElements();
-  })
-  .catch(error => {
-    console.error(error);
-  });  
-
-  
-  /* var xhr = new XMLHttpRequest();
-  xhr.open("GET", "settings", false);
-  xhr.send(null);
-  if (xhr.status === 200) {
-    settings = JSON.parse(xhr.responseText);
-  }
-  var xhr = new XMLHttpRequest();     
-  xhr.open("GET", "state", false);
-  xhr.send(null);
-  if (xhr.status === 200) {
-    state = JSON.parse(xhr.responseText);
-    updateElements();
-  } */
-  
+    .then(async ([res1, res2]) => {
+      settings = await res1.json();
+      state = await res2.json();
+      updateElements();
+    })
+    .catch(error => {
+      console.error(error);
+    });
 }
 
 function updateElements() {
@@ -112,70 +85,19 @@ function updateElements() {
   $("#devName").text(state["deviceName"]);
 }
 
-/* function BeforeSend(request) {
-	
-	$.blockUI({ css: { 
-		border: 'none', 
-		padding: '15px', 
-		backgroundColor: '#000', 
-		'-webkit-border-radius': '10px', 
-		'-moz-border-radius': '10px', 
-		opacity: .5, 
-		color: '#fff' 
-	} });
-  
-}
-
-function Success(data, status, request) {
-  
-  setTimeout($.unblockUI, 0);
-	// setTimeout(function() { 
-  //   $.unblockUI({ 
-  //       onUnblock: function(){ alert(data); } 
-  //   }); 
-  // }, 2000); 
-  
-}
-
-function onError(request, status, error) {
-	
-	setTimeout(function() { 
-    $.unblockUI({ 
-        onUnblock: function(){ alert("error: " + request.responseText); } 
-    }); 
-  }, 2000);
-} */
-
 function postData(t, p) {
-  /* 
-  var e = new XMLHttpRequest;
-  //e.addEventListener('loadstart', BeforeSend);
-  //e.addEventListener('load', handleEvent);
-  //e.addEventListener('loadend', Success);
-  //e.addEventListener('progress', handleEvent);
-  //e.addEventListener('error', Error);
-  //e.addEventListener('abort', handleEvent);
-  //e.timeout = 2000;
-  e.open("POST", p, !0);
-  e.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-  //e.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
-  // fallbacks for IE and older browsers:
-  //e.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
-  //e.setRequestHeader("Pragma", "no-cache");
-  //console.log(JSON.stringify(t));
-  e.send(JSON.stringify(t));
- */
-  
-  fetch(p, {method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json;charset=UTF-8",
-            },
-            body: JSON.stringify(t)})
-  .catch(error => {
-    console.error(error);
-  });
-
+  //return;
+  fetch(p, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json;charset=UTF-8",
+    },
+    body: JSON.stringify(t)
+  })
+    .catch(error => {
+      console.error(error);
+    });
 }
 
 function mode_onclick(mode) {
@@ -218,9 +140,9 @@ function setFanColor(fan) {
   }
   for (var i = 1; i <= 4; ++i) {
     if (i <= fan) {
-      $("#fan_lvl_" + i).attr("src", "level_" + i + "_on.svg");
+      $("#fan_lvl_" + i).attr("xlink:href", "imgsvg.svg#level_" + i + "_on");
     } else {
-      $("#fan_lvl_" + i).attr("src", "level_" + i + "_off.svg");
+      $("#fan_lvl_" + i).attr("xlink:href", "imgsvg.svg#level_" + i + "_off");
     }
   }
 }
@@ -265,7 +187,7 @@ function temp_onclick(temp) {
   $("#target_temp").text(state["temp"] + " °C");
   if (state["power"] === true) {
     clearTimeout(setTemp);
-    setTemp = setTimeout(function(){postData(state, "state");}, 1000);
+    setTemp = setTimeout(function () { postData(state, "state"); }, 1000);
   }
 }
 
@@ -289,7 +211,7 @@ function StepV_onclick() {
   $("#swing-btn").removeClass("btn-info");
   $("#swing-btn").addClass("btn-outline-info");
   if (state["power"] === true) {
-    stepVState = {"stepv": true, "swingvert":false};
+    stepVState = { "stepv": true, "swingvert": false };
     postData(stepVState, "stepv");
   }
 }
@@ -311,7 +233,7 @@ function econo_onclick() {
 
 function turbo_onclick() {
   if (state["power"] === true) {
-    turboState = {"turbo": true};
+    turboState = { "turbo": true };
     postData(turboState, "turbo");
   }
 }
@@ -368,7 +290,7 @@ function StepH_onclick() {
   $("#swingH-btn").removeClass("btn-info");
   $("#swingH-btn").addClass("btn-outline-info");
   if (state["power"] === true) {
-    stepVState = {"steph": true, "swinghor":false};
+    stepVState = { "steph": true, "swinghor": false };
     postData(stepVState, "steph");
   }
 }

@@ -1,0 +1,23 @@
+{
+    "autoupdate": false,
+    "synchronise": false,
+    "syncMe": true,
+    "deviceName": "AC Remote Control",
+    "wifiPass": "testpass",
+    "updSvr": "192.168.1.1",
+    "updSvrPort": 80,
+    "innerDoor": false,
+    "outerDoor": false,
+    "startAP": false,
+    "hideSSID": false,
+    "wifiChannel": 13,
+    "version": 2,
+    "enableIRRecv": false,
+    "useMQTT": false,
+    "mqtt_broker": "192.168.1.1",
+    "mqtt_port": 1883,
+    "mqtt_topic": "ac/test",
+    "mqtt_username": "acUnit",
+    "mqtt_password": "testpass",
+    "irModel": 3
+}

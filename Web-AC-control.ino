@@ -6,19 +6,40 @@
   is selected (required for Coolix).
 
 */
-#include "Web-AC-control.h"
+#if defined(ESP8266)
+#include <LittleFS.h>
+#else
+#include <SPIFFS.h>
+#endif
+
+#ifndef FILESYSTEM
+#ifdef ESP8266
+#define FILESYSTEM LittleFS
+#else
+#define FILESYSTEM SPIFFS
+#endif  // defined(ESP8266)
+#endif
+
+#if (FILESYSTEM == LittleFS)
+#define FILESYSTEMSTR "LittleFS"
+#else
+#define FILESYSTEMSTR "SPIFFS"
+#endif
+
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
 #endif  // ESP8266
+
 #if defined(ESP32)
 #include <ESPmDNS.h>
 #include <WebServer.h>
 #include <WiFi.h>
 #include <Update.h>
 #endif  // ESP32
+
 #include <WiFiUdp.h>
 #include <WiFiManager.h>
 #include <ArduinoJson.h>
@@ -27,7 +48,7 @@
 #include <IRrecv.h>
 #include <IRutils.h>
 // OTA
-#include <ArduinoOTA.h> // only for InternalStorage
+#include <ArduinoOTA.h>  // only for InternalStorage
 #include <ArduinoHttpClient.h>
 // MQTT
 #include <ArduinoMqttClient.h>
@@ -150,7 +171,7 @@ File fsUploadFile;
 // core
 state acState;
 DeviceSettings deviceSettings;
-const char *filenameS = "/deviceSettings.json";
+const char* filenameS = "/deviceSettings.json";
 
 #if defined(ESP8266)
 ESP8266WebServer server(80);
@@ -166,7 +187,359 @@ unsigned long wifiReconnectInterval = 30000;
 unsigned long mqttPreviousMillis = 0;
 unsigned long mqttReconnectInterval = 30000;
 
-void reconnectWiFi(){
+// MQTT SetUP
+void setMQTT() {
+
+  if (!deviceSettings.useMQTT) {
+    if (mqttClient.connected()) {
+      mqttClient.stop();
+    }
+    return;
+  }
+
+  // You can provide a unique client ID, if not set the library uses Arduin-millis()
+  // Each client must have a unique client ID
+  mqttClient.setId(String(WiFi.macAddress()));
+
+  // You can provide a username and password for authentication
+  mqttClient.setUsernamePassword(deviceSettings.mqtt_username, deviceSettings.mqtt_password);
+
+  // By default the library connects with the "clean session" flag set,
+  // you can disable this behaviour by using
+  // mqttClient.setCleanSession(false);
+
+  //Serial.print("Attempting to connect to the MQTT broker: ");
+  //Serial.println(deviceSettings.mqtt_broker);
+
+  if (!mqttClient.connect(deviceSettings.mqtt_broker, deviceSettings.mqtt_port)) {
+    //Serial.print("MQTT connection failed! Error code = ");
+    //Serial.println(mqttClient.connectError());
+
+    return;
+  }
+
+  //Serial.println("You're connected to the MQTT broker!");
+  //Serial.println();
+
+  // set the message receive callback
+  mqttClient.onMessage(onMqttMessage);
+
+  //Serial.print("Subscribing to topic: ");
+  //Serial.println(deviceSettings.mqtt_topic);
+  //Serial.println();
+
+  // subscribe to a topic
+  // the second parameter set's the QoS of the subscription,
+  // the the library supports subscribing at QoS 0, 1, or 2
+  int subscribeQos = 1;
+
+  mqttClient.subscribe(deviceSettings.mqtt_topic, subscribeQos);
+
+  // topics can be unsubscribed using:
+  // mqttClient.unsubscribe(topic);
+
+  //Serial.print("Waiting for messages on topic: ");
+  //Serial.println(deviceSettings.mqtt_topic);
+  //Serial.println();
+
+  // send state on connect
+  DynamicJsonDocument root(1024);
+  root["version"] = VERSION;
+  root["deviceName"] = deviceSettings.deviceName;
+  root["mode"] = acState.operation;
+  root["fan"] = acState.fan;
+  root["temp"] = acState.temperature;
+  root["power"] = acState.powerStatus;
+  root["swingvert"] = acState.swingvert;
+  root["swinghor"] = acState.swinghor;
+  root["econo"] = acState.econo;
+  root["lowNoise"] = acState.lowNoise;
+  root["heatTenC"] = acState.heatTenC;
+
+  String output;
+  serializeJson(root, output);
+  sendMQTT("{\"islocal\":true,\"ep\":\"state\", \"message\":" + output + "}");
+}
+
+// MQTT callback
+void onMqttMessage(int messageSize) {
+
+  // we received a message, print out the topic and contents
+  //Serial.print("Received a message with topic '");
+  //Serial.print(mqttClient.messageTopic());
+  //Serial.print("', duplicate = ");
+  //Serial.print(mqttClient.messageDup() ? "true" : "false");
+  //Serial.print(", QoS = ");
+  //Serial.print(mqttClient.messageQoS());
+  //Serial.print(", retained = ");
+  //Serial.print(mqttClient.messageRetain() ? "true" : "false");
+  //Serial.print("', length ");
+  //Serial.print(messageSize);
+  //Serial.println(" bytes:");
+
+  String newMessage;
+  // use the Stream interface to print the contents
+  while (mqttClient.available()) {
+    //Serial.print((char)mqttClient.read());
+    newMessage = newMessage + (char)mqttClient.read();  //Conver *byte to String
+  }
+  //Serial.println(newMessage);
+  //Serial.println();
+  //Serial.println();
+
+  DynamicJsonDocument root(1024);
+  DeserializationError error = deserializeJson(root, newMessage);
+  if (error) {
+    //Serial.println("Failed to read message.");
+    return;
+  }
+  if (root.containsKey("ep") && root.containsKey("message")) {
+
+    String ep;
+    serializeJson(root["ep"], ep);
+    if (root["ep"] == "turbo") {
+      if (root["message"]["turbo"]) {
+        root["message"]["econo"] = false;
+      }
+    }
+    String messageState;
+    serializeJson(root["message"], messageState);
+
+    //Serial.print("Endpoint: ");Serial.println(ep);
+    //Serial.print("Message: ");Serial.println(messageState);
+    //Serial.println();
+
+    if (root.containsKey("islocal")) {
+      return;
+    }
+
+    bool mustSend;
+    if (root["ep"] == "state") {
+
+      if (root["message"].containsKey("temp")) {
+        acState.temperature = (uint8_t)root["message"]["temp"];
+      }
+      if (root["message"].containsKey("fan")) {
+        acState.fan = (uint8_t)root["message"]["fan"];
+      }
+      if (root["message"].containsKey("power")) {
+        acState.powerStatus = root["message"]["power"];
+      }
+      if (root["message"].containsKey("mode")) {
+        acState.operation = root["message"]["mode"];
+      }
+      if (root["message"].containsKey("swingvert")) {
+        acState.swingvert = root["message"]["swingvert"];
+      }
+      if (root["message"].containsKey("swinghor")) {
+        acState.swinghor = root["message"]["swinghor"];
+      }
+      if (root["message"].containsKey("econo")) {
+        acState.econo = root["message"]["econo"];
+      }
+      if (root["message"].containsKey("lowNoise")) {
+        acState.lowNoise = root["message"]["lowNoise"];
+      }
+      if (root["message"].containsKey("heatTenC")) {
+        acState.heatTenC = root["message"]["heatTenC"];
+      }
+
+      if (!root.containsKey("rst")) {
+
+        if (acState.powerStatus) {
+
+          //Serial.println("Power On / Change params");
+          //Serial.print("operation: ");Serial.println(acState.operation);
+          //Serial.print("fan: ");Serial.println(acState.fan);
+          //Serial.print("temperature: ");Serial.println(acState.temperature);
+          //Serial.print("swingvert: ");Serial.println(acState.swingvert);
+          //Serial.print("swinghor: ");Serial.println(acState.swinghor);
+
+          irsend.setTemp(acState.temperature);
+
+          if (acState.operation == 0) {
+            irsend.setMode(kFujitsuAcModeAuto);
+          } else if (acState.operation == 1) {
+            irsend.setMode(kFujitsuAcModeCool);
+          } else if (acState.operation == 2) {
+            irsend.setMode(kFujitsuAcModeDry);
+          } else if (acState.operation == 3) {
+            irsend.setMode(kFujitsuAcModeFan);
+          } else if (acState.operation == 4) {
+            irsend.setMode(kFujitsuAcModeHeat);
+          }
+
+          if (acState.fan == 0) {
+            irsend.setFanSpeed(kFujitsuAcFanAuto);
+          } else if (acState.fan == 1) {
+            irsend.setFanSpeed(kFujitsuAcFanQuiet);
+          } else if (acState.fan == 2) {
+            irsend.setFanSpeed(kFujitsuAcFanLow);
+          } else if (acState.fan == 3) {
+            irsend.setFanSpeed(kFujitsuAcFanMed);
+          } else if (acState.fan == 4) {
+            irsend.setFanSpeed(kFujitsuAcFanHigh);
+          }
+
+          if ((acState.swingvert) && (acState.swinghor)) {
+            irsend.setSwing(kFujitsuAcSwingBoth);
+          } else {
+            if (acState.swingvert) {
+              irsend.setSwing(kFujitsuAcSwingVert);
+            } else if (acState.swinghor) {
+              irsend.setSwing(kFujitsuAcSwingHoriz);
+            } else {
+              irsend.setSwing(kFujitsuAcSwingOff);
+            }
+          }
+
+          irsend.setCmd(kFujitsuAcCmdTurnOn);
+
+        } else {
+
+          //Serial.println("Power Off");
+          irsend.setCmd(kFujitsuAcCmdTurnOff);
+        }
+
+        mustSend = true;
+      }
+
+    } else if (root["ep"] == "turbo") {
+
+      if (root["message"]["turbo"]) {
+
+        //Serial.println("Powerful mode On");
+        irsend.setCmd(kFujitsuAcCmdPowerful);
+        mustSend = true;
+        acState.econo = false;
+      }
+
+    } else if (root["ep"] == "stepv") {
+
+      if (root["message"].containsKey("swingvert")) {
+        acState.swingvert = root["message"]["swingvert"];
+      }
+
+      if (root["message"]["stepv"]) {
+
+        //Serial.println("Step vertical");
+        irsend.setCmd(kFujitsuAcCmdStepVert);
+        mustSend = true;
+      }
+
+    } else if (root["ep"] == "steph") {
+
+      if (root["message"].containsKey("swinghor")) {
+        acState.swinghor = root["message"]["swinghor"];
+      }
+
+      if (root["message"]["steph"]) {
+
+        //Serial.println("Step horizontal");
+        irsend.setCmd(kFujitsuAcCmdStepHoriz);
+        mustSend = true;
+      }
+
+    } else if (root["ep"] == "econo") {
+
+      if (root["message"].containsKey("econo")) {
+        acState.econo = root["message"]["econo"];
+      }
+
+      //Serial.print("Economy: ");Serial.println(acState.econo);
+      irsend.setCmd(kFujitsuAcCmdEcono);
+      mustSend = true;
+
+    } else if (root["ep"] == "lnoise") {
+
+      if (root["message"].containsKey("lowNoise")) {
+        acState.lowNoise = root["message"]["lowNoise"];
+      }
+
+      //Serial.println("Outdoor Unit Low Noise");
+      //irsend.setCmd(kFujitsuAcOutsideQuietOffset);
+      if (acState.lowNoise) {
+        irsend.setOutsideQuiet(true);
+      } else {
+        irsend.setOutsideQuiet(false);
+      }
+      mustSend = true;
+
+    } else if (root["ep"] == "heattenc") {
+
+      if (root["message"].containsKey("heatTenC")) {
+        acState.heatTenC = root["message"]["heatTenC"];
+      }
+
+      //Serial.println("Set 10C Heat");
+      if (acState.heatTenC) {
+        irsend.set10CHeat(true);
+      } else {
+        irsend.set10CHeat(false);
+      }
+      mustSend = true;
+    }
+
+    if (mustSend) {
+      disableEnableIRRecvAndSend();
+      //sendMQTT("{\"islocal\":true,\"ep\":\"" + ep + "\", \"message\":" + messageState + "}");
+      syncWithOtherDevices(messageState, "/" + ep);
+    }
+  }
+  /*
+  } else if (root.containsKey("restart")){
+    
+    ESP.restart();
+    
+  } else if (root.containsKey("getState")){
+  */
+  bool mustRestart = root.containsKey("restart");
+
+  root.clear();
+  //DynamicJsonDocument root(1024);
+  root["version"] = VERSION;
+  root["deviceName"] = deviceSettings.deviceName;
+  root["mode"] = acState.operation;
+  root["fan"] = acState.fan;
+  root["temp"] = acState.temperature;
+  root["power"] = acState.powerStatus;
+  root["swingvert"] = acState.swingvert;
+  root["swinghor"] = acState.swinghor;
+  root["econo"] = acState.econo;
+  root["lowNoise"] = acState.lowNoise;
+  root["heatTenC"] = acState.heatTenC;
+
+  String output;
+  serializeJson(root, output);
+
+  if (mustRestart) {
+    sendMQTT("{\"rst\":true,\"ep\":\"state\", \"message\":" + output + "}");
+    delay(300);
+    ESP.restart();
+  } else {
+    sendMQTT("{\"islocal\":true,\"ep\":\"state\", \"message\":" + output + "}");
+  }
+}
+
+// MQTT sending message to topic
+void sendMQTT(String message) {
+
+  if (!deviceSettings.useMQTT) {
+    return;
+  }
+
+  //Serial.print("Sending message to topic: ");Serial.println(deviceSettings.mqtt_topic);
+  //Serial.println(message);
+
+  // send message, the Print interface can be used to set the message contents
+  mqttClient.beginMessage(deviceSettings.mqtt_topic, true);
+  mqttClient.print(message);
+  mqttClient.endMessage();
+
+  //Serial.println();
+}
+
+void reconnectWiFi() {
   unsigned long currentMillis = millis();
   // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
   if ((WiFi.status() != WL_CONNECTED) && (currentMillis - wifiPreviousMillis >= wifiReconnectInterval)) {
@@ -177,14 +550,14 @@ void reconnectWiFi(){
   }
 }
 
-void reconnectMQTT(){
+void reconnectMQTT() {
 
   unsigned long mqttCurrentMillis = millis();
-  
+
   if (deviceSettings.useMQTT) {
-    
+
     if ((!mqttClient.connected()) && (mqttCurrentMillis - mqttPreviousMillis >= mqttReconnectInterval)) {
-      
+
       mqttClient.stop();
       delay(1000);
       setMQTT();
@@ -201,10 +574,9 @@ void reconnectMQTT(){
       */
       mqttPreviousMillis = mqttCurrentMillis;
     }
-    
+
     mqttClient.poll();
   }
-  
 }
 
 void handleSketchDownload(bool forceupdate) {
@@ -212,26 +584,25 @@ void handleSketchDownload(bool forceupdate) {
   if ((!deviceSettings.autoupdate) && (!forceupdate)) {
     return;
   }
-  
+
   const unsigned long CHECK_INTERVAL = 60000;
   static unsigned long previousMillis;
   unsigned long currentMillis = millis();
 
   if (!forceupdate) {
-    
+
     if (currentMillis - previousMillis < CHECK_INTERVAL)
       return;
     previousMillis = currentMillis;
-    
   }
-  
-  const char* SERVER = deviceSettings.updSvr;//"192.168.9.1"; // must be string for HttpClient
-  const unsigned short SERVER_PORT = deviceSettings.updSvrPort;//80;
-  #if defined(ARDUINO_ESP8266_WEMOS_D1R1) || defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_ESP8266_WEMOS_D1MINIPRO) || defined(ARDUINO_ESP8266_WEMOS_D1MINILITE)
+
+  const char* SERVER = deviceSettings.updSvr;                    //"192.168.9.1"; // must be string for HttpClient
+  const unsigned short SERVER_PORT = deviceSettings.updSvrPort;  //80;
+#if defined(ARDUINO_ESP8266_WEMOS_D1R1) || defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_ESP8266_WEMOS_D1MINIPRO) || defined(ARDUINO_ESP8266_WEMOS_D1MINILITE)
   const char* PATH = "/acwifictrl/ota/wemos-v%d.bin";
-  #else
+#else
   const char* PATH = "/acwifictrl/ota/nodemcu-v%d.bin";
-  #endif
+#endif
 
   WiFiClient wifiClient;
   HttpClient client(wifiClient, SERVER, SERVER_PORT);
@@ -248,7 +619,7 @@ void handleSketchDownload(bool forceupdate) {
   //Serial.print("Update status code: ");
   //Serial.println(statusCode);
   if (statusCode != 200) {
-    if (forceupdate){
+    if (forceupdate) {
       server.send(statusCode, "text/html", "Manual update");
       delay(100);
     }
@@ -260,7 +631,7 @@ void handleSketchDownload(bool forceupdate) {
   if (length == HttpClient::kNoContentLengthHeader) {
     client.stop();
     //Serial.println("Server didn't provide Content-length header. Can't continue with update.");
-    if (forceupdate){
+    if (forceupdate) {
       server.send(200, "text/html", "Server didn't provide Content-length header. Can't continue with update.");
       delay(100);
     }
@@ -273,16 +644,16 @@ void handleSketchDownload(bool forceupdate) {
   if (!InternalStorage.open(length)) {
     client.stop();
     //Serial.println("There is not enough space to store the update. Can't continue with update.");
-    if (forceupdate){
+    if (forceupdate) {
       server.send(200, "text/html", "There is not enough space to store the update. Can't continue with update.");
       delay(100);
     }
     return;
   }
-  
+
   byte b;
   while (length > 0) {
-    if (!client.readBytes(&b, 1)) // reading a byte with timeout
+    if (!client.readBytes(&b, 1))  // reading a byte with timeout
       break;
     InternalStorage.write(b);
     length--;
@@ -293,17 +664,17 @@ void handleSketchDownload(bool forceupdate) {
     //Serial.print("Timeout downloading update file at ");
     //Serial.print(length);
     //Serial.println(" bytes. Can't continue with update.");
-    if (forceupdate){
+    if (forceupdate) {
       server.send(200, "text/html", "Timeout downloading update file. Can't continue with update.");
       delay(100);
     }
     return;
   }
-  if (forceupdate){
+  if (forceupdate) {
     server.send(200, "text/html", "Sketch update apply and reset.");
     delay(100);
   }
-    
+
   //Serial.println("Sketch update apply and reset.");
   //Serial.flush();
   ESP.restart();
@@ -361,7 +732,7 @@ void handleFileUpload() {  // upload a new file to the FILESYSTEM
   } else if (upload.status == UPLOAD_FILE_WRITE) {
     if (fsUploadFile)
       fsUploadFile.write(upload.buf, upload.currentSize);
-      // Write the received bytes to the file
+    // Write the received bytes to the file
   } else if (upload.status == UPLOAD_FILE_END) {
     if (fsUploadFile) {
       // If the file was successfully created
@@ -402,16 +773,63 @@ void servForceupdate() {
 
 // Serving restart
 void servRestart() {
+  
+  if (deviceSettings.useMQTT) {
+    DynamicJsonDocument root(1024);
+    root["version"] = VERSION;
+    root["deviceName"] = deviceSettings.deviceName;
+    root["mode"] = acState.operation;
+    root["fan"] = acState.fan;
+    root["temp"] = acState.temperature;
+    root["power"] = acState.powerStatus;
+    root["swingvert"] = acState.swingvert;
+    root["swinghor"] = acState.swinghor;
+    root["econo"] = acState.econo;
+    root["lowNoise"] = acState.lowNoise;
+    root["heatTenC"] = acState.heatTenC;
+
+    String output;
+    serializeJson(root, output);
+
+    sendMQTT("{\"rst\":true,\"ep\":\"state\", \"message\":" + output + "}");
+  }
+  
   server.send(200, "text/html", "reset");
-  delay(100);
+  delay(200);
   ESP.restart();
+
+}
+
+// Format filesystem
+void servFFS() {
+  DynamicJsonDocument root(1024);
+  DeserializationError error = deserializeJson(root, server.arg("plain"));
+  if (error) {
+    server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
+  } else {
+
+    if (root.containsKey("key")) {
+       if ((root["key"] == 56)){
+         bool result = FILESYSTEM.format();
+         if (result) {
+           server.send(200, "application/json", "{\"result\":true}");
+           } else {
+             server.send(400, "application/json", "{\"result\":false}");
+             }
+       } else {
+        server.send(404, "application/json", "{\"result\":false,\"error\":\"FAIL. Missing arguments.\"}");
+       }
+    } else {
+      server.send(404, "application/json", "{\"result\":false,\"error\":\"FAIL. Missing arguments.\"}");
+    }
+  }
 }
 
 // Serving getDevState
 void getDevState() {
-  
+
   DynamicJsonDocument root(1024);
-  
+
   root["version"] = VERSION;
   root["deviceName"] = deviceSettings.deviceName;
   root["mode"] = acState.operation;
@@ -422,8 +840,8 @@ void getDevState() {
   root["swinghor"] = acState.swinghor;
   root["econo"] = acState.econo;
   root["lowNoise"] = acState.lowNoise;
-  root["heatTenC"] =  acState.heatTenC;
-  
+  root["heatTenC"] = acState.heatTenC;
+
   String output;
   serializeJson(root, output);
   //server.send(200, "text/plain", output);
@@ -432,17 +850,17 @@ void getDevState() {
 
 // Serving getDeviceSettings
 void getDeviceSettings() {
-  
-//  if (FILESYSTEM.exists(filenameS)) {
-    File file = FILESYSTEM.open(filenameS, "r");
-//  } 
-    
+
+  //  if (FILESYSTEM.exists(filenameS)) {
+  File file = FILESYSTEM.open(filenameS, "r");
+  //  }
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, file);
-  if (error){
+  if (error) {
     //Serial.println("Failed to read file, using default configuration");
   }
-  
+
   root["version"] = VERSION;
   root["deviceName"] = root["deviceName"] | deviceSettings.deviceName;
   root["wifiPass"] = root["wifiPass"] | deviceSettings.wifiPass;
@@ -468,10 +886,10 @@ void getDeviceSettings() {
   root["mqtt_password"] = root["mqtt_password"] | deviceSettings.mqtt_password;
   // Model
   root["irModel"] = root["irModel"] | deviceSettings.irModel;
-  
+
   // Close the file (File's destructor doesn't close the file)
   file.close();
-  
+
   String output;
   serializeJson(root, output);
   server.send(200, "application/json", output);
@@ -479,29 +897,28 @@ void getDeviceSettings() {
 
 // Serving getSyncMe
 void getSyncMe() {
-  
+
   if (deviceSettings.syncMe) {
     server.send(200, "text/plain", "true");
   } else {
     server.send(200, "text/plain", "false");
   }
-  
 }
 
 // Serving postState
 void postState() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
     server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
   } else {
-    
+
     if (root.containsKey("temp")) {
-      acState.temperature = (uint8_t) root["temp"];
+      acState.temperature = (uint8_t)root["temp"];
     }
     if (root.containsKey("fan")) {
-      acState.fan = (uint8_t) root["fan"];
+      acState.fan = (uint8_t)root["fan"];
     }
     if (root.containsKey("power")) {
       acState.powerStatus = root["power"];
@@ -535,26 +952,26 @@ void postState() {
     root["swinghor"] = acState.swinghor;
     root["econo"] = acState.econo;
     root["lowNoise"] = acState.lowNoise;
-    root["heatTenC"] =  acState.heatTenC;
-    
+    root["heatTenC"] = acState.heatTenC;
+
     String output;
     serializeJson(root, output);
     //server.send(200, "text/plain", output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
-        
+
     if (acState.powerStatus) {
-  
+
       //Serial.println("Power On / Change params");
       //Serial.print("operation: ");Serial.println(acState.operation);
       //Serial.print("fan: ");Serial.println(acState.fan);
       //Serial.print("temperature: ");Serial.println(acState.temperature);
       //Serial.print("swingvert: ");Serial.println(acState.swingvert);
       //Serial.print("swinghor: ");Serial.println(acState.swinghor);
-      
+
       irsend.setTemp(acState.temperature);
-      
+
       if (acState.operation == 0) {
         irsend.setMode(kFujitsuAcModeAuto);
       } else if (acState.operation == 1) {
@@ -566,7 +983,7 @@ void postState() {
       } else if (acState.operation == 4) {
         irsend.setMode(kFujitsuAcModeHeat);
       }
-  
+
       if (acState.fan == 0) {
         irsend.setFanSpeed(kFujitsuAcFanAuto);
       } else if (acState.fan == 1) {
@@ -592,34 +1009,35 @@ void postState() {
       }
 
       irsend.setCmd(kFujitsuAcCmdTurnOn);
-      
+
     } else {
-      
+
       //Serial.println("Power Off");
-      
+
       irsend.setCmd(kFujitsuAcCmdTurnOff);
     }
-    
+
     disableEnableIRRecvAndSend();
-    
+
     sendMQTT("{\"islocal\":true,\"ep\":\"state\", \"message\":" + output + "}");
-    
+
     syncWithOtherDevices(output, "/state");
-    
   }
 }
 
 // Serving postTurbo
 void postTurbo() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
     server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
   } else {
-    
+
     if (root["turbo"]) {
       
+      acState.econo = false;
+
       root["version"] = VERSION;
       root["deviceName"] = deviceSettings.deviceName;
       root["mode"] = acState.operation;
@@ -630,36 +1048,34 @@ void postTurbo() {
       root["swinghor"] = acState.swinghor;
       root["econo"] = acState.econo;
       root["lowNoise"] = acState.lowNoise;
-      root["heatTenC"] =  acState.heatTenC;
-      
+      root["heatTenC"] = acState.heatTenC;
     }
-    
+
     String output;
     serializeJson(root, output);
     //server.send(200, "text/plain", output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
-    
+
     if (root["turbo"]) {
-  
+
       //Serial.println("Powerful mode On");
-      
+
       irsend.setCmd(kFujitsuAcCmdPowerful);
-      
+
       disableEnableIRRecvAndSend();
 
       sendMQTT("{\"islocal\":true,\"ep\":\"turbo\", \"message\":" + output + "}");
-      
+
       syncWithOtherDevices(output, "/turbo");
-      
     }
   }
 }
 
 // Serving postStepV
 void postStepV() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
@@ -671,7 +1087,7 @@ void postStepV() {
     }
 
     if (root["stepv"]) {
-      
+
       root["version"] = VERSION;
       root["deviceName"] = deviceSettings.deviceName;
       root["mode"] = acState.operation;
@@ -682,36 +1098,34 @@ void postStepV() {
       root["swinghor"] = acState.swinghor;
       root["econo"] = acState.econo;
       root["lowNoise"] = acState.lowNoise;
-      root["heatTenC"] =  acState.heatTenC;
-      
+      root["heatTenC"] = acState.heatTenC;
     }
-    
+
     String output;
     serializeJson(root, output);
     //server.send(200, "text/plain", output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
-    
+
     if (root["stepv"]) {
-  
+
       //Serial.println("Step vertical");
-      
+
       irsend.setCmd(kFujitsuAcCmdStepVert);
-      
+
       disableEnableIRRecvAndSend();
 
       sendMQTT("{\"islocal\":true,\"ep\":\"stepv\", \"message\":" + output + "}");
-      
+
       syncWithOtherDevices(output, "/stepv");
-      
     }
   }
 }
 
 // Serving postStepH
 void postStepH() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
@@ -723,7 +1137,7 @@ void postStepH() {
     }
 
     if (root["steph"]) {
-      
+
       root["version"] = VERSION;
       root["deviceName"] = deviceSettings.deviceName;
       root["mode"] = acState.operation;
@@ -734,36 +1148,34 @@ void postStepH() {
       root["swinghor"] = acState.swinghor;
       root["econo"] = acState.econo;
       root["lowNoise"] = acState.lowNoise;
-      root["heatTenC"] =  acState.heatTenC;
-      
+      root["heatTenC"] = acState.heatTenC;
     }
-    
+
     String output;
     serializeJson(root, output);
     //server.send(200, "text/plain", output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
-    
+
     if (root["steph"]) {
-  
+
       //Serial.println("Step horizontal");
-      
+
       irsend.setCmd(kFujitsuAcCmdStepHoriz);
-      
+
       disableEnableIRRecvAndSend();
 
       sendMQTT("{\"islocal\":true,\"ep\":\"steph\", \"message\":" + output + "}");
-      
+
       syncWithOtherDevices(output, "/steph");
-      
     }
   }
 }
 
 // Serving postEcono
 void postEcono() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
@@ -784,30 +1196,29 @@ void postEcono() {
     root["swinghor"] = acState.swinghor;
     root["econo"] = acState.econo;
     root["lowNoise"] = acState.lowNoise;
-    root["heatTenC"] =  acState.heatTenC;
-    
+    root["heatTenC"] = acState.heatTenC;
+
     String output;
     serializeJson(root, output);
     //server.send(200, "text/plain", output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
-    
+
     //Serial.print("Economy: ");Serial.println(acState.econo);
     irsend.setCmd(kFujitsuAcCmdEcono);
-    
+
     disableEnableIRRecvAndSend();
-    
+
     sendMQTT("{\"islocal\":true,\"ep\":\"econo\", \"message\":" + output + "}");
-    
+
     syncWithOtherDevices(output, "/econo");
-    
   }
 }
 
 // Serving postLNoise
 void postLNoise() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
@@ -828,15 +1239,15 @@ void postLNoise() {
     root["swinghor"] = acState.swinghor;
     root["econo"] = acState.econo;
     root["lowNoise"] = acState.lowNoise;
-    root["heatTenC"] =  acState.heatTenC;
-    
+    root["heatTenC"] = acState.heatTenC;
+
     String output;
     serializeJson(root, output);
     //server.send(200, "text/plain", output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
-    
+
     //Serial.println("Outdoor Unit Low Noise");
     //irsend.setCmd(kFujitsuAcOutsideQuietOffset);
     if (acState.lowNoise) {
@@ -844,19 +1255,18 @@ void postLNoise() {
     } else {
       irsend.setOutsideQuiet(false);
     }
-    
+
     disableEnableIRRecvAndSend();
 
     sendMQTT("{\"islocal\":true,\"ep\":\"lnoise\", \"message\":" + output + "}");
-    
+
     syncWithOtherDevices(output, "/lnoise");
-    
   }
 }
 
 // Serving postHeatTenC
 void postHeatTenC() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
@@ -877,35 +1287,34 @@ void postHeatTenC() {
     root["swinghor"] = acState.swinghor;
     root["econo"] = acState.econo;
     root["lowNoise"] = acState.lowNoise;
-    root["heatTenC"] =  acState.heatTenC;
-    
+    root["heatTenC"] = acState.heatTenC;
+
     String output;
     serializeJson(root, output);
     //server.send(200, "text/plain", output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
-    
+
     //Serial.println("Set 10C Heat");
-    
+
     if (acState.heatTenC) {
       irsend.set10CHeat(true);
     } else {
       irsend.set10CHeat(false);
     }
-    
+
     disableEnableIRRecvAndSend();
 
     sendMQTT("{\"islocal\":true,\"ep\":\"heattenc\", \"message\":" + output + "}");
-    
+
     syncWithOtherDevices(output, "/heattenc");
-    
   }
 }
 
 // Serving postDeviceSettings
 void postDeviceSettings() {
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, server.arg("plain"));
   if (error) {
@@ -916,7 +1325,7 @@ void postDeviceSettings() {
     bool newSettingsAP = false;
     bool changeStateMQTT = false;
     bool newIRmodel = false;
-    
+
     if (root.containsKey("deviceName")) {
       newSettingsAP = deviceSettings.deviceName != root["deviceName"];
       strlcpy(deviceSettings.deviceName, root["deviceName"], sizeof(deviceSettings.deviceName));
@@ -948,15 +1357,15 @@ void postDeviceSettings() {
     if (newSettingsAP && deviceSettings.startAP) {
       WiFi.softAP(deviceSettings.deviceName, deviceSettings.wifiPass, deviceSettings.wifiChannel, deviceSettings.hideSSID);
       //Serial.println("Soft AP started");
-      } else if (newSettingsAP && !deviceSettings.startAP) {
-        if (WiFi.softAPdisconnect(true)) {
-          //Serial.println("Soft AP stopped");
-          } else {
-            WiFi.softAP(deviceSettings.deviceName, deviceSettings.wifiPass, deviceSettings.wifiChannel, deviceSettings.hideSSID);
-            //Serial.println("Can't stop Soft AP)");
-            //Serial.println("Soft AP started");
-          }
+    } else if (newSettingsAP && !deviceSettings.startAP) {
+      if (WiFi.softAPdisconnect(true)) {
+        //Serial.println("Soft AP stopped");
+      } else {
+        WiFi.softAP(deviceSettings.deviceName, deviceSettings.wifiPass, deviceSettings.wifiChannel, deviceSettings.hideSSID);
+        //Serial.println("Can't stop Soft AP)");
+        //Serial.println("Soft AP started");
       }
+    }
     // Sync
     if (root.containsKey("synchronise")) {
       deviceSettings.synchronise = root["synchronise"];
@@ -1014,30 +1423,31 @@ void postDeviceSettings() {
     if (newIRmodel) {
       // Set up what we want to send. See ir_Fujitsu.cpp for all the options.
       // See `fujitsu_ac_remote_model_t` in `ir_Fujitsu.h` for a list of models.
-      if (deviceSettings.irModel == 1){
-        irsend.setModel(ARRAH2E);}
-      else if (deviceSettings.irModel == 2){
-        irsend.setModel(ARDB1);}
-      else if (deviceSettings.irModel == 3){
-        irsend.setModel(ARREB1E);}
-      else if (deviceSettings.irModel == 4){
-        irsend.setModel(ARJW2);}
-      else if (deviceSettings.irModel == 5){
-        irsend.setModel(ARRY4);}
-      else if (deviceSettings.irModel == 6){
-        irsend.setModel(ARREW4E);}
+      if (deviceSettings.irModel == 1) {
+        irsend.setModel(ARRAH2E);
+      } else if (deviceSettings.irModel == 2) {
+        irsend.setModel(ARDB1);
+      } else if (deviceSettings.irModel == 3) {
+        irsend.setModel(ARREB1E);
+      } else if (deviceSettings.irModel == 4) {
+        irsend.setModel(ARJW2);
+      } else if (deviceSettings.irModel == 5) {
+        irsend.setModel(ARRY4);
+      } else if (deviceSettings.irModel == 6) {
+        irsend.setModel(ARREW4E);
+      }
     }
-    
+
     // Serialize JSON to file
     serializeJson(root, file);
 
     // Close the file (File's destructor doesn't close the file)
     file.close();
-  
+
     String output;
     serializeJson(root, output);
     server.send(200, "application/json", output);
-    
+
     delay(200);
 
     //Serial.println("Device Settings:");
@@ -1047,12 +1457,11 @@ void postDeviceSettings() {
     if (changeStateMQTT) {
       setMQTT();
     }
-    
   }
 }
 
 void setDeviceSettings() {
-  
+
   File file;
   // read settings
   bool fileExists = FILESYSTEM.exists(filenameS);
@@ -1061,7 +1470,7 @@ void setDeviceSettings() {
   } else {
     file = FILESYSTEM.open(filenameS, "w");
   }
-  
+
   DynamicJsonDocument root(1024);
   DeserializationError error = deserializeJson(root, file);
   if (error) {
@@ -1069,7 +1478,7 @@ void setDeviceSettings() {
   }
 
   strlcpy(deviceSettings.deviceName, root["deviceName"] | "AC Remote Control", sizeof(deviceSettings.deviceName));
-  strlcpy(deviceSettings.wifiPass, root["wifiPass"] | "@#D@t@n@$0V#@IoT", sizeof(deviceSettings.wifiPass));
+  strlcpy(deviceSettings.wifiPass, root["wifiPass"] | "testpass", sizeof(deviceSettings.wifiPass));
   deviceSettings.wifiChannel = root["wifiChannel"] | 1;
   deviceSettings.startAP = root["startAP"] | false;
   deviceSettings.hideSSID = root["hideSSID"] | false;
@@ -1092,7 +1501,7 @@ void setDeviceSettings() {
   strlcpy(deviceSettings.mqtt_password, root["mqtt_password"] | "", sizeof(deviceSettings.mqtt_password));
   // Model
   deviceSettings.irModel = root["irModel"] | 1;
-  
+
   if (!fileExists) {
 
     root["deviceName"] = deviceSettings.deviceName;
@@ -1119,65 +1528,62 @@ void setDeviceSettings() {
     root["mqtt_password"] = deviceSettings.mqtt_password;
     // Model
     root["irModel"] = deviceSettings.irModel;
-    
+
     // Serialize JSON to file
     serializeJson(root, file);
   }
-  
+
   // Close the file (File's destructor doesn't close the file)
   file.close();
-  
+
   //Serial.print("Setting: ");
   //Serial.println(deviceSettings);
-  
 }
 
-void syncWithOtherDevices(String output, String endPoint){
-    
+void syncWithOtherDevices(String output, String endPoint) {
+
   if (deviceSettings.synchronise) {
 
     // TODO deviceSettings.syncDevs array
-    
-    const char* syncSERVER = "192.168.2.21";//deviceSettings.syncSvr;// must be string for HttpClient
-    const unsigned short syncSERVER_PORT = 80;//deviceSettings.syncSvrPort;
-  
+
+    const char* syncSERVER = "192.168.2.21";    //deviceSettings.syncSvr;// must be string for HttpClient
+    const unsigned short syncSERVER_PORT = 80;  //deviceSettings.syncSvrPort;
+
     WiFiClient wifiClient;
     HttpClient client(wifiClient, syncSERVER, syncSERVER_PORT);
-    
+
     client.get("/syncMe");
-  
+
     // read the status code and body of the response
     int statusCode = client.responseStatusCode();
     String response = client.responseBody();
-    
+
     //Serial.print("Status code GET: ");
     //Serial.println(statusCode);
     //Serial.print("Response GET: ");
     //Serial.println(response);
 
     if ((statusCode == 200) && (response == "true")) {
-      
+
       client.post(endPoint, "application/json", output);
+
+      // // read the status code and body of the response
+      // int statusCode = client.responseStatusCode();
+      // String response = client.responseBody();
       
-      // read the status code and body of the response
-      int statusCode = client.responseStatusCode();
-      String response = client.responseBody();
-    
-      //Serial.print("Status code: ");
-      //Serial.println(statusCode);
-      //Serial.print("Response: ");
-      //Serial.println(response);
-      
+      // Serial.print("Status code: ");
+      // Serial.println(statusCode);
+      // Serial.print("Response: ");
+      // Serial.println(response);
     }
-    
+
     //Serial.println("Wait five seconds");
     //delay(5000);
-    
   }
 }
-    
+
 void setWebServer() {
-  
+
 #if defined(ESP8266)
   httpUpdateServer.setup(&server);
 #endif  // ESP8266
@@ -1186,8 +1592,8 @@ void setWebServer() {
     server.sendHeader("Location", String("ui.html"), true);
     server.send(302, "text/plain", "");
   });
-  
-  
+
+
   server.on("/state", HTTP_GET, getDevState);
   server.on("/state", HTTP_POST, postState);
   server.on("/stepv", HTTP_POST, postStepV);
@@ -1200,15 +1606,17 @@ void setWebServer() {
   server.on("/settings", HTTP_POST, postDeviceSettings);
   server.on("/syncMe", HTTP_GET, getSyncMe);
   server.on("/reset", servRestart);
+  server.on("/formatfs", HTTP_POST, servFFS);
   server.on("/forceupdate", servForceupdate);
-  server.on("/file-upload", HTTP_POST,
-  // if the client posts to the upload page
-  []() {
-    // Send status 200 (OK) to tell the client we are ready to receive
-    server.send(200);
-  },
-  handleFileUpload);  // Receive and save the file
-  
+  server.on(
+    "/file-upload", HTTP_POST,
+    // if the client posts to the upload page
+    []() {
+      // Send status 200 (OK) to tell the client we are ready to receive
+      server.send(200);
+    },
+    handleFileUpload);  // Receive and save the file
+
   server.on("/file-upload", HTTP_GET, []() {
     // if the client requests the upload page
 
@@ -1218,33 +1626,33 @@ void setWebServer() {
     html += "</form>";
     server.send(200, "text/html", html);
   });
-  
+
   server.serveStatic("/", FILESYSTEM, "/", "max-age=86400");
-  
+
   server.onNotFound(handleNotFound);
   server.begin();
 }
 
 void disableEnableIRRecvAndSend() {
-  
+
   if (deviceSettings.enableIRRecv) {
 
     irrecv.disableIRIn();
     irsend.send();
     irrecv.enableIRIn();
-    
+
   } else {
     irsend.send();
   }
-  
 }
 
 // IR Resv
 void printIRresults() {
 
-  if (!deviceSettings.enableIRRecv)
+  if (!deviceSettings.enableIRRecv){
     return;
-    
+    }
+/*
   // Check if an IR message has been received.
   if (irrecv.decode(&results)) {  // We have captured something.
     // The capture has stopped at this point.
@@ -1255,7 +1663,7 @@ void printIRresults() {
     if (protocol == decode_type_t::UNKNOWN) {  // Yes.
       // Convert the results into an array suitable for sendRaw().
       // resultToRawArray() allocates the memory we need for the array.
-      uint16_t *raw_array = resultToRawArray(&results);
+      uint16_t* raw_array = resultToRawArray(&results);
       // Find out how many elements are in the array.
       size = getCorrectedRawLength(&results);
 #if SEND_RAW
@@ -1266,13 +1674,13 @@ void printIRresults() {
       //Serial.println(resultToSourceCode(&results));
 #endif  // SEND_RAW
       // Deallocate the memory allocated by resultToRawArray().
-      delete [] raw_array;
+      delete[] raw_array;
     } else if (hasACState(protocol)) {  // Does the message require a state[]?
       // It does, so send with bytes instead.
       //success = irsend.send(protocol, results.state, size / 8);
       //Serial.println("message require a state[]");
       //Serial.println(resultToHumanReadableBasic(&results));
-      for (int i = 0; i<sizeof(results.state); i++) {
+      for (int i = 0; i < sizeof(results.state); i++) {
         //Serial.print(results.state[i], HEX);
         //Serial.println();
       }
@@ -1286,372 +1694,23 @@ void printIRresults() {
     }
     // Resume capturing IR messages. It was not restarted until after we sent
     // the message so we didn't capture our own message.
+    */
     irrecv.resume();
-
+    /*
     // Display a crude timestamp & notification.
     uint32_t now = millis();
-    /*
+    
     Serial.printf(
         "%06u.%03u: A %d-bit %s message was %ssuccessfully retransmitted.\n",
         now / 1000, now % 1000, size, typeToString(protocol).c_str(),
         success ? "" : "un");
-    */
-  }
-  yield();  // Or delay(milliseconds); This ensures the ESP doesn't WDT reset.
-}
-
-// MQTT SetUP
-void setMQTT(){
-
-  if (!deviceSettings.useMQTT) {
-    if (mqttClient.connected()){
-      mqttClient.stop();
-    }
-    return;
-  }
-  
-  // You can provide a unique client ID, if not set the library uses Arduin-millis()
-  // Each client must have a unique client ID
-  mqttClient.setId(String(WiFi.macAddress()));
-
-  // You can provide a username and password for authentication
-  mqttClient.setUsernamePassword(deviceSettings.mqtt_username, deviceSettings.mqtt_password);
-
-  // By default the library connects with the "clean session" flag set,
-  // you can disable this behaviour by using
-  // mqttClient.setCleanSession(false);
-  
-  //Serial.print("Attempting to connect to the MQTT broker: ");
-  //Serial.println(deviceSettings.mqtt_broker);
-
-  if (!mqttClient.connect(deviceSettings.mqtt_broker, deviceSettings.mqtt_port)) {
-    //Serial.print("MQTT connection failed! Error code = ");
-    //Serial.println(mqttClient.connectError());
-
-    return;
-  }
-  
-  //Serial.println("You're connected to the MQTT broker!");
-  //Serial.println();
-
-  // set the message receive callback
-  mqttClient.onMessage(onMqttMessage);
-
-  //Serial.print("Subscribing to topic: ");
-  //Serial.println(deviceSettings.mqtt_topic);
-  //Serial.println();
-
-  // subscribe to a topic
-  // the second parameter set's the QoS of the subscription,
-  // the the library supports subscribing at QoS 0, 1, or 2
-  int subscribeQos = 1;
-
-  mqttClient.subscribe(deviceSettings.mqtt_topic, subscribeQos);
-
-  // topics can be unsubscribed using:
-  // mqttClient.unsubscribe(topic);
-
-  //Serial.print("Waiting for messages on topic: ");
-  //Serial.println(deviceSettings.mqtt_topic);
-  //Serial.println();
-
-  // send state on connect
-  DynamicJsonDocument root(1024);
-  root["version"] = VERSION;
-  root["deviceName"] = deviceSettings.deviceName;
-  root["mode"] = acState.operation;
-  root["fan"] = acState.fan;
-  root["temp"] = acState.temperature;
-  root["power"] = acState.powerStatus;
-  root["swingvert"] = acState.swingvert;
-  root["swinghor"] = acState.swinghor;
-  root["econo"] = acState.econo;
-  root["lowNoise"] = acState.lowNoise;
-  root["heatTenC"] =  acState.heatTenC;
-  
-  String output;
-  serializeJson(root, output);
-  sendMQTT("{\"islocal\":true,\"ep\":\"state\", \"message\":" + output + "}");
-  
-}
-
-// MQTT callback
-void onMqttMessage(int messageSize) {
-
-  // we received a message, print out the topic and contents
-  //Serial.print("Received a message with topic '");
-  //Serial.print(mqttClient.messageTopic());
-  //Serial.print("', duplicate = ");
-  //Serial.print(mqttClient.messageDup() ? "true" : "false");
-  //Serial.print(", QoS = ");
-  //Serial.print(mqttClient.messageQoS());
-  //Serial.print(", retained = ");
-  //Serial.print(mqttClient.messageRetain() ? "true" : "false");
-  //Serial.print("', length ");
-  //Serial.print(messageSize);
-  //Serial.println(" bytes:");
-
-  String newMessage;
-  // use the Stream interface to print the contents
-  while (mqttClient.available()) {
-    //Serial.print((char)mqttClient.read());
-    newMessage = newMessage + (char)mqttClient.read();  //Conver *byte to String
-  }
-  //Serial.println(newMessage);
-  //Serial.println();
-  //Serial.println();
-  
-  DynamicJsonDocument root(1024);
-  DeserializationError error = deserializeJson(root, newMessage);
-
-  if (root.containsKey("ep") && root.containsKey("message")){
-
-    String ep;
-    serializeJson(root["ep"], ep);
-    String messageState;
-    serializeJson(root["message"], messageState);
     
-    //Serial.print("Endpoint: ");Serial.println(ep);
-    //Serial.print("Message: ");Serial.println(messageState);
-    //Serial.println();
-
-    if (root.containsKey("islocal")) {
-      return;
-    }
-    
-    bool mustSend;
-    if (root["ep"] == "state"){
-
-      if (root["message"].containsKey("temp")) {
-        acState.temperature = (uint8_t) root["message"]["temp"];
-      }
-      if (root["message"].containsKey("fan")) {
-        acState.fan = (uint8_t) root["message"]["fan"];
-      }
-      if (root["message"].containsKey("power")) {
-        acState.powerStatus = root["message"]["power"];
-      }
-      if (root["message"].containsKey("mode")) {
-        acState.operation = root["message"]["mode"];
-      }
-      if (root["message"].containsKey("swingvert")) {
-        acState.swingvert = root["message"]["swingvert"];
-      }
-      if (root["message"].containsKey("swinghor")) {
-        acState.swinghor = root["message"]["swinghor"];
-      }
-      if (root["message"].containsKey("econo")) {
-        acState.econo = root["message"]["econo"];
-      }
-      if (root["message"].containsKey("lowNoise")) {
-        acState.lowNoise = root["message"]["lowNoise"];
-      }
-      if (root["message"].containsKey("heatTenC")) {
-        acState.heatTenC = root["message"]["heatTenC"];
-      }
-
-      if (!root.containsKey("rst")) {
-      
-        if (acState.powerStatus) {
-      
-          //Serial.println("Power On / Change params");
-          //Serial.print("operation: ");Serial.println(acState.operation);
-          //Serial.print("fan: ");Serial.println(acState.fan);
-          //Serial.print("temperature: ");Serial.println(acState.temperature);
-          //Serial.print("swingvert: ");Serial.println(acState.swingvert);
-          //Serial.print("swinghor: ");Serial.println(acState.swinghor);
-          
-          irsend.setTemp(acState.temperature);
-          
-          if (acState.operation == 0) {
-            irsend.setMode(kFujitsuAcModeAuto);
-          } else if (acState.operation == 1) {
-            irsend.setMode(kFujitsuAcModeCool);
-          } else if (acState.operation == 2) {
-            irsend.setMode(kFujitsuAcModeDry);
-          } else if (acState.operation == 3) {
-            irsend.setMode(kFujitsuAcModeFan);
-          } else if (acState.operation == 4) {
-            irsend.setMode(kFujitsuAcModeHeat);
-          }
-      
-          if (acState.fan == 0) {
-            irsend.setFanSpeed(kFujitsuAcFanAuto);
-          } else if (acState.fan == 1) {
-            irsend.setFanSpeed(kFujitsuAcFanQuiet);
-          } else if (acState.fan == 2) {
-            irsend.setFanSpeed(kFujitsuAcFanLow);
-          } else if (acState.fan == 3) {
-            irsend.setFanSpeed(kFujitsuAcFanMed);
-          } else if (acState.fan == 4) {
-            irsend.setFanSpeed(kFujitsuAcFanHigh);
-          }
-    
-          if ((acState.swingvert) && (acState.swinghor)) {
-            irsend.setSwing(kFujitsuAcSwingBoth);
-          } else {
-            if (acState.swingvert) {
-              irsend.setSwing(kFujitsuAcSwingVert);
-            } else if (acState.swinghor) {
-              irsend.setSwing(kFujitsuAcSwingHoriz);
-            } else {
-              irsend.setSwing(kFujitsuAcSwingOff);
-            }
-          }
-
-          irsend.setCmd(kFujitsuAcCmdTurnOn);
-          
-        } else {
-          
-          //Serial.println("Power Off");
-          irsend.setCmd(kFujitsuAcCmdTurnOff);
-        }
-  
-        mustSend = true;
-      
-      }
-      
-    } else if (root["ep"] == "turbo"){
-
-      if (root["message"]["turbo"]) {
-        
-        //Serial.println("Powerful mode On");
-        irsend.setCmd(kFujitsuAcCmdPowerful);
-        mustSend = true;
-        
-      }
-      
-    } else if (root["ep"] == "stepv"){
-
-      if (root["message"].containsKey("swingvert")) {
-        acState.swingvert = root["message"]["swingvert"];
-      }
-      
-      if (root["message"]["stepv"]) {
-    
-        //Serial.println("Step vertical");
-        irsend.setCmd(kFujitsuAcCmdStepVert);
-        mustSend = true;
-        
-      }
-
-     } else if (root["ep"] == "steph"){
-
-      if (root["message"].containsKey("swinghor")) {
-        acState.swinghor = root["message"]["swinghor"];
-      }
-      
-      if (root["message"]["steph"]) {
-    
-        //Serial.println("Step horizontal");
-        irsend.setCmd(kFujitsuAcCmdStepHoriz);
-        mustSend = true;
-        
-      }
-        
-    } else if (root["ep"] == "econo"){
-
-      if (root["message"].containsKey("econo")) {
-        acState.econo = root["message"]["econo"];
-      }
-      
-      //Serial.print("Economy: ");Serial.println(acState.econo);
-      irsend.setCmd(kFujitsuAcCmdEcono);
-      mustSend = true;
-    
-    } else if (root["ep"] == "lnoise"){
-
-      if (root["message"].containsKey("lowNoise")) {
-        acState.lowNoise = root["message"]["lowNoise"];
-      }
-      
-      //Serial.println("Outdoor Unit Low Noise");
-      //irsend.setCmd(kFujitsuAcOutsideQuietOffset);
-      if (acState.lowNoise) {
-        irsend.setOutsideQuiet(true);
-      } else {
-        irsend.setOutsideQuiet(false);
-      }
-      mustSend = true;
-    
-    } else if (root["ep"] == "heattenc"){
-
-      if (root["message"].containsKey("heatTenC")) {
-        acState.heatTenC = root["message"]["heatTenC"];
-      }
-      
-      //Serial.println("Set 10C Heat");
-      if (acState.heatTenC) {
-        irsend.set10CHeat(true);
-      } else {
-        irsend.set10CHeat(false);
-      }
-      mustSend = true;
-    
-    }
-
-    if (mustSend) {
-      disableEnableIRRecvAndSend();
-      //sendMQTT("{\"islocal\":true,\"ep\":\"" + ep + "\", \"message\":" + messageState + "}");
-      syncWithOtherDevices(messageState, "/" + ep);
-    }
-  }  
-  /*
-  } else if (root.containsKey("restart")){
-    
-    ESP.restart();
-    
-  } else if (root.containsKey("getState")){
-  */
-  bool mustRestart = root.containsKey("restart");
-  
-  root.clear();
-  //DynamicJsonDocument root(1024);
-  root["version"] = VERSION;
-  root["deviceName"] = deviceSettings.deviceName;
-  root["mode"] = acState.operation;
-  root["fan"] = acState.fan;
-  root["temp"] = acState.temperature;
-  root["power"] = acState.powerStatus;
-  root["swingvert"] = acState.swingvert;
-  root["swinghor"] = acState.swinghor;
-  root["econo"] = acState.econo;
-  root["lowNoise"] = acState.lowNoise;
-  root["heatTenC"] =  acState.heatTenC;
-  
-  String output;
-  serializeJson(root, output);
-  
-  if (mustRestart){
-    sendMQTT("{\"rst\":true,\"ep\":\"state\", \"message\":" + output + "}");
-    delay(300);
-    ESP.restart();
-  } else {
-    sendMQTT("{\"islocal\":true,\"ep\":\"state\", \"message\":" + output + "}");
-  }
-}
-
-// MQTT sending message to topic
-void sendMQTT(String message){
-
-  if (!deviceSettings.useMQTT) {
-    return;
-  }
-  
-  //Serial.print("Sending message to topic: ");Serial.println(deviceSettings.mqtt_topic);
-  //Serial.println(message);
-
-  // send message, the Print interface can be used to set the message contents
-  mqttClient.beginMessage(deviceSettings.mqtt_topic, true);
-  mqttClient.print(message);
-  mqttClient.endMessage();
-  
-  //Serial.println();
-  
+  }*/
+  //yield();  // Or delay(milliseconds); This ensures the ESP doesn't WDT reset.
 }
 
 void setup() {
-  
+
   //Serial.begin(kBaudRate, SERIAL_8N1);
   //while (!Serial)  // Wait for the serial connection to be establised.
   //  delay(50);
@@ -1663,39 +1722,40 @@ void setup() {
   //Serial.println(kRecvPin);
   //Serial.print("IR transmit Pin ");
   //Serial.println(kIrLedPin);
-  
+
   //Serial.println("mounting " FILESYSTEMSTR "...");
 
   if (!FILESYSTEM.begin()) {
     //Serial.println("Failed to mount file system");
     return;
   }
-  
+
   setDeviceSettings();
 
   if (deviceSettings.enableIRRecv) {
     irrecv.enableIRIn();  // Start up the IR receiver.
   }
-  irsend.begin();       // Start up the IR sender.
+  irsend.begin();  // Start up the IR sender.
   delay(200);
   // Set up what we want to send. See ir_Fujitsu.cpp for all the options.
   // See `fujitsu_ac_remote_model_t` in `ir_Fujitsu.h` for a list of models.
-  if (deviceSettings.irModel == 1){
-    irsend.setModel(ARRAH2E);}
-  else if (deviceSettings.irModel == 2){
-    irsend.setModel(ARDB1);}
-  else if (deviceSettings.irModel == 3){
-    irsend.setModel(ARREB1E);}
-  else if (deviceSettings.irModel == 4){
-    irsend.setModel(ARJW2);}
-  else if (deviceSettings.irModel == 5){
-    irsend.setModel(ARRY4);}
-  else if (deviceSettings.irModel == 6){
-    irsend.setModel(ARREW4E);}
-    
-  
+  if (deviceSettings.irModel == 1) {
+    irsend.setModel(ARRAH2E);
+  } else if (deviceSettings.irModel == 2) {
+    irsend.setModel(ARDB1);
+  } else if (deviceSettings.irModel == 3) {
+    irsend.setModel(ARREB1E);
+  } else if (deviceSettings.irModel == 4) {
+    irsend.setModel(ARJW2);
+  } else if (deviceSettings.irModel == 5) {
+    irsend.setModel(ARRY4);
+  } else if (deviceSettings.irModel == 6) {
+    irsend.setModel(ARREW4E);
+  }
+
+
   delay(500);
-  
+
   WiFiManager wifiManager;
   wifiManager.setConfigPortalTimeout(180);
   //wifiManager.setConnectTimeout(2);
@@ -1707,13 +1767,13 @@ void setup() {
 
   WiFi.setAutoReconnect(true);
   WiFi.persistent(true);
-  
+
   WiFi.softAP(deviceSettings.deviceName, deviceSettings.wifiPass, deviceSettings.wifiChannel, deviceSettings.hideSSID);
-  
+
   if (!deviceSettings.startAP) {
     if (WiFi.softAPdisconnect(true)) {
       //Serial.println("Soft AP stopped");
-      } else {
+    } else {
       WiFi.softAP(deviceSettings.deviceName, deviceSettings.wifiPass, deviceSettings.wifiChannel, deviceSettings.hideSSID);
       //Serial.println("Can't stop Soft AP");
       //Serial.println("Soft AP started");
@@ -1723,21 +1783,20 @@ void setup() {
   // MQTT
   setMQTT();
 
-  // WEB SERVER 
+  // WEB SERVER
   setWebServer();
-
 }
 
 void loop() {
 
   reconnectWiFi();
-  
+
   // check for updates
   handleSketchDownload(false);
 
   // MQTT
   reconnectMQTT();
-  
+
   // print from IR
   printIRresults();
 

@@ -1,27 +1,6 @@
 var settings = {};
 
 function getSettings() {
-  /* $.ajax({
-    type: 'GET',
-    url: "settings",
-    dataType: "json",
-    beforeSend: BeforeSend,
-    success: function(data, status, request) {
-      if (!data) {
-        return;
-      }
-      settings = data;
-      updateElements();
-      Success(data, status, request)
-    },
-    error: function(request, status, error) {
-      console.log('error getting settings');
-      onError(request, status, error)
-    },
-    timeout: 1000
-    //,cache: false
-  }); */
-
   fetch('settings')
   .then(async(response) => {
     settings = await response.json();
@@ -57,56 +36,7 @@ function updateElements(){
   }
 }
 
-/* function BeforeSend(request) {
-	
-	$.blockUI({ css: { 
-		border: 'none', 
-		padding: '15px', 
-		backgroundColor: '#000', 
-		'-webkit-border-radius': '10px', 
-		'-moz-border-radius': '10px', 
-		opacity: .5, 
-		color: '#fff' 
-	} });
-  
-}
-
-function Success(data, status, request) {
-      
-  setTimeout($.unblockUI, 0);
-  // setTimeout(function() { 
-  //     $.unblockUI({ 
-  //         onUnblock: function(){ alert("Success"); } 
-  //     }); 
-  //   }, 2000);
-}
-
-function onError(request, status, error) {
-	
-	setTimeout(function() { 
-    $.unblockUI({ 
-        onUnblock: function(){ alert("error: " + request.responseText); } 
-    }); 
-  }, 2000);
-} */
-
 function postData(t, p) {
-  /* var e = new XMLHttpRequest;
-  e.addEventListener('loadstart', BeforeSend);
-  //e.addEventListener('load', handleEvent);
-  e.addEventListener('loadend', Success);
-  //e.addEventListener('progress', handleEvent);
-  e.addEventListener('error', Error);
-  //e.addEventListener('abort', handleEvent);
-  //e.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
-  // fallbacks for IE and older browsers:
-  //e.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
-  //e.setRequestHeader("Pragma", "no-cache");
-  e.open("POST", p, !0);
-  e.setRequestHeader("Content-Type", "application/json");
-  console.log(JSON.stringify(t));
-  e.send(JSON.stringify(t)); */
-
   fetch(p, {method: "POST",
             headers: {
               Accept: "application/json",

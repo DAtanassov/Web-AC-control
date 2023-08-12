@@ -1,32 +1,53 @@
 body {
     padding-top: 5px;
 }
+
 .mode-btn {
     max-width: 62px;
     min-width: 62px;
     height: 44px;
 }
+
 .fan-btn {
     max-width: 62px;
     min-width: 62px;
     height: 44px;
 }
+
 .button-wrapper .btn {
-    margin-bottom:5px;
+    margin-bottom: 5px;
 }
+
 .power-btn {
     max-width: 112px;
     min-width: 112px;
 }
+
 .temp-btn {
     max-width: 112px;
     min-width: 112px;
 }
+
 .wing-btn {
     max-width: 112px;
     min-width: 112px;
 }
+
 .btn:focus {
     outline: none;
     box-shadow: none;
-  }
+}
+
+.mode-column,
+.fan-column {
+    max-width: 80px;
+}
+
+.center-column {
+    max-width: 140px;
+}
+
+.left-btn-column,
+.right-btn-column {
+    max-width: 150px;
+}
