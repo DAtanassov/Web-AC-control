@@ -291,7 +291,7 @@ void onMqttMessage(int messageSize) {
   DeserializationError error = deserializeJson(root, newMessage);
   if (error) {
     //Serial.println("Failed to read message.");
-    return;
+    //return;
   }
   if (root.containsKey("ep") && root.containsKey("message")) {
 
