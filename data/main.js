@@ -1,5 +1,4 @@
 var state = {};
-var settings = {};
 var setTemp;
 
 function updateStatus() {
@@ -11,21 +10,6 @@ function updateStatus() {
   .catch(error => {
     console.error(error);
   });
-}
-
-function updateAll() {
-  Promise.all([
-    fetch('settings'),
-    fetch('state')
-  ])
-    .then(async ([res1, res2]) => {
-      settings = await res1.json();
-      state = await res2.json();
-      updateElements();
-    })
-    .catch(error => {
-      console.error(error);
-    });
 }
 
 function updateElements() {
@@ -68,7 +52,7 @@ function updateElements() {
     $("#heat10-btn").removeClass("btn-info");
     $("#heat10-btn").addClass("btn-outline-info");
   }
-  if (!((settings["irModel"] === 1) || (settings["irModel"] === 4))) {
+  if (!((state["irModel"] === 1) || (state["irModel"] === 4))) {
     $("#swingH-btn").remove();
     $("#stepHor-btn").remove();
   }
@@ -86,7 +70,6 @@ function updateElements() {
 }
 
 function postData(t, p) {
-  //return;
   fetch(p, {
     method: "POST",
     headers: {

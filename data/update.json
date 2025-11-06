@@ -1,0 +1,4 @@
+{
+    "WEMOS":{"version": 3, "path":"/ota/3/wemos.bin", "data":[]},
+    "ESP8266":{"version": 3, "path":"/ota/3/esp8266.bin", "data":[]}
+}

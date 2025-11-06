@@ -12,11 +12,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
-
+    <!--<link rel='stylesheet' type='text/css' href='bootstrap.min.css'>-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel='stylesheet' type='text/css' href='main.css'>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
-
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    
+    <!--<script type="text/javascript" src="jquery-3.7.1.slim.min.js"></script>-->
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
     <script type="text/javascript" src='main.js'></script>
 
 </head>
@@ -78,28 +79,25 @@
                         <div class="btn-group button-wrapper">
                             <button type="button" title="Power" id="power-btn" class="btn btn-danger text-nowrap"
                                 onclick='power_onclick();'>
-                                <svg width="25px" height="25px" style="font-size:1.6em;color:black;">
+                                <svg width="25px" height="25px" class="power-btn-svg">
                                     <use xlink:href="imgsvg.svg#power-off">
                                 </svg>
-                                <b style="font-size:1.5em;" id="power"> OFF</b>
+                                <b class="power-btn-text" id="power"> OFF</b>
                             </button>
                         </div>
                         <!--Temperature-->
                         <div class="btn-group-vertical">
                             <button type="button" title="Temperature" class="btn btn-outline-info temp-btn text-nowrap" id="temp-dsp"
-                                onclick='updateStatus();'
-                                style="font-size:2.2em;padding-top:12px;padding-bottom:12px; color: black;"><b
+                                onclick='updateStatus();'><b class="temp-btn-text"
                                     id="target_temp"> ~ °C</b></button>
-                            <button type="button" title="Temp Up" class="btn btn-outline-info wing-btn text-nowrap"
-                                id="target_temp_up" onclick='temp_onclick(1);'
-                                style="font-size:1.67em;padding-top:0px;padding-bottom:0px;">
+                            <button type="button" title="Temp Up" class="btn btn-outline-info temp-btn-up-down wing-btn text-nowrap"
+                                id="target_temp_up" onclick='temp_onclick(1);'>
                                 <svg width="23px" height="26px">
                                     <use xlink:href="imgsvg.svg#chevron-up">
                                 </svg>
                             </button>
-                            <button type="button" title="Temp Down" class="btn btn-outline-info wing-btn text-nowrap"
-                                id="target_temp_down" onclick='temp_onclick(-1);'
-                                style="font-size:1.67em;padding-top:0px;padding-bottom:0px;">
+                            <button type="button" title="Temp Down" class="btn btn-outline-info temp-btn-up-down wing-btn text-nowrap"
+                                id="target_temp_down" onclick='temp_onclick(-1);'>
                                 <svg width="23px" height="26px">
                                     <use xlink:href="imgsvg.svg#chevron-down">
                                 </svg>
@@ -155,19 +153,19 @@
                         aria-label="Vertical button group">
                         <!--10 °C HEAT-->
                         <button type="button" id="heat10-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='heat10_onclick();'><b style="font-size:1.2em; color: black;" id="heat10">10°C
+                            onclick='heat10_onclick();'><b class="b-btn" id="heat10">10°C
                                 HEAT</b></button>
                         <!--econo-->
                         <button type="button" id="econo-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='econo_onclick();'><b style="font-size:1.2em; color: black;"
+                            onclick='econo_onclick();'><b class="b-btn"
                                 id="econo">Economy</b></button>
                         <!--Swing Vertical-->
                         <button type="button" id="swing-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='swing_onclick();'><b style="font-size:1.2em; color: black;" id="swingvert">Swing
+                            onclick='swing_onclick();'><b class="b-btn" id="swingvert">Swing
                                 V</b></button>
                         <!--Swing Horizontal-->
                         <button type="button" id="swingH-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='swingH_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Swing
+                            onclick='swingH_onclick();'><b class="b-btn" id="lowNoise">Swing
                                 H</b></button>
                     </div>
                 </div>
@@ -176,19 +174,19 @@
                         aria-label="Vertical button group">
                         <!--POWERFUL-->
                         <button type="button" id="turbo-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='turbo_onclick();'><b style="font-size:1.2em; color: black;"
+                            onclick='turbo_onclick();'><b class="b-btn"
                                 id="turbo">Powerful</b></button>
                         <!--Low Noise-->
                         <button type="button" id="lowNoise-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='lowNoise_onclick();'><b style="font-size:1.2em; color: black;" id="lowNoise">Low
+                            onclick='lowNoise_onclick();'><b class="b-btn" id="lowNoise">Low
                                 Noise</b></button>
                         <!--Swing Step Vertical-->
                         <button type="button" id="stepVert-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='StepV_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">V Step
+                            onclick='StepV_onclick();'><b class="b-btn" id="stepVert">V Step
                                 Set</b></button>
                         <!--Swing Step Horiontal-->
                         <button type="button" id="stepHor-btn" class="btn btn-outline-info text-nowrap footer-btn"
-                            onclick='StepH_onclick();'><b style="font-size:1.2em; color: black;" id="stepVert">H Step
+                            onclick='StepH_onclick();'><b class="b-btn" id="stepVert">H Step
                                 Set</b></button>
                     </div>
                 </div>
@@ -199,7 +197,7 @@
 
     </div>
 
-    <script>$(document).ready(updateAll);</script>
+    <script>$(document).ready(updateStatus);</script>
 </body>
 
 </html>

@@ -51,3 +51,30 @@ body {
 .right-btn-column {
     max-width: 150px;
 }
+
+.b-btn {
+    font-size:1.2em;
+    color: black;
+}
+
+.temp-btn-up-down {
+    font-size:1.67em;
+    padding-top:0px;
+    padding-bottom:0px;
+}
+
+.temp-btn-text {
+    font-size:2.2em;
+    padding-top:12px;
+    padding-bottom:12px;
+    color: black;
+}
+
+.power-btn-svg {
+    font-size:1.6em;
+    color:black;
+}
+
+.power-btn-text {
+    font-size:1.5em;
+}

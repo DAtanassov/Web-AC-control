@@ -32,3 +32,8 @@
 *.app
 
 # Others
+build
+data/bootstrap*
+data/jquery*
+for_upload
+todo.txt

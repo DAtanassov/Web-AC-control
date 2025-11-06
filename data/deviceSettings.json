@@ -1,23 +1,48 @@
 {
-    "autoupdate": false,
-    "synchronise": false,
-    "syncMe": true,
-    "deviceName": "AC Remote Control",
-    "wifiPass": "testpass",
-    "updSvr": "192.168.1.1",
-    "updSvrPort": 80,
-    "innerDoor": false,
-    "outerDoor": false,
-    "startAP": false,
-    "hideSSID": false,
-    "wifiChannel": 13,
-    "version": 2,
-    "enableIRRecv": false,
-    "useMQTT": false,
-    "mqtt_broker": "192.168.1.1",
-    "mqtt_port": 1883,
-    "mqtt_topic": "ac/test",
-    "mqtt_username": "acUnit",
-    "mqtt_password": "testpass",
-    "irModel": 3
+  "deviceName": "AC Remote Control",
+  "wifiPass": "testpass",
+  "wifiChannel": 13,
+  "startAP": false,
+  "hideSSID": false,
+  "enableIRRecv": false,
+  "synchronize": true,
+  "syncMe": true,
+  "useMQTT": true,
+  "mqtt_broker": "192.168.1.1",
+  "mqtt_port": 1883,
+  "mqtt_topic": "ac/test",
+  "mqtt_username": "testUser",
+  "mqtt_password": "testpass",
+  "irModel": 3,
+  "otaAutoUpd": false,
+  "otaURL": "192.168.1.1",
+  "otaURLPort": 80,
+  "otaHTTPS": false,
+  "otaPath": "/update.json",
+  "syncDevs": [
+    {
+      "enable": false,
+      "devURL": "192.168.1.111",
+      "devPort": 80,
+      "devName": "Unit 1"
+    },
+    {
+      "enable": true,
+      "devURL": "192.168.1.112",
+      "devPort": 80,
+      "devName": "Unit 2"
+    },
+    {
+      "enable": false,
+      "devURL": "192.168.1.113",
+      "devPort": 80,
+      "devName": "Unit 3"
+    },
+    {
+      "enable": false,
+      "devURL": "192.168.1.114",
+      "devPort": 80,
+      "devName": "Unit 4"
+    }
+  ]
 }

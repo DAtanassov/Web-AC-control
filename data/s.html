@@ -1,34 +1,37 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset='utf-8'>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0"> 
+    <meta http-equiv="Expires" content="0">
     <title>AC WiFi IR Control Settings</title>
     <meta name="description" content="AC WiFi IR Control">
     <meta name="author" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    
+
     <link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
+
+    <!--<link rel='stylesheet' type='text/css' href='bootstrap.min.css'>-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
     <style type="text/css">
-		body {
-			padding-top: 5px;
-		}
-	</style>
-    
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+        body {
+            padding-top: 5px;
+        }
+    </style>
+
+    <!--<script type="text/javascript" src="jquery-3.7.1.slim.min.js"></script>-->
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
     <script type="text/javascript" src='s.js'></script>
-    
 
 </head>
+
 <body>
     <div class="container">
         <div class="container-fluid">
-            
+
             <div class="row">
                 <div class="text-center">
                     <h5><a href="/" target="_self">AC WiFi IR Control Settings</a></h5>
@@ -36,47 +39,66 @@
             </div>
 
             <div class="row">
-                
+
                 <div class="input-group mb-3">
                     <span class="input-group-text d-none d-sm-block">Device name / SSID</span>
-                    <input class="form-control" aria-label="Device name / SSID" placeholder="Device name / SSID" type="text" maxlength="32" id="deviceName" name="deviceName">
+                    <input class="form-control" aria-label="Device name / SSID" placeholder="Device name / SSID"
+                        type="text" maxlength="32" id="deviceName" name="deviceName">
                     <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="startAP" name="startAP"> AP
+                        <label for="startAP">AP&nbsp;</label>
+                        <input class="form-check-input mt-0" type="checkbox" id="startAP" name="startAP">
                     </div>
                     <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="hideSSID" name="hideSSID"> Hide
+                        <label for="hideSSID">Hide&nbsp;</label>
+                        <input class="form-check-input mt-0" type="checkbox" id="hideSSID" name="hideSSID">
                     </div>
                 </div>
-                
+
                 <div class="input-group mb-3">
                     <span class="input-group-text d-none d-sm-block">WiFi pass</span>
-                    <input class="form-control" aria-label="WiFi pass" placeholder="WiFi pass" type="password" maxlength="32" id="wifiPass" name="wifiPass">
+                    <input class="form-control" aria-label="WiFi pass" placeholder="WiFi pass" type="password"
+                        maxlength="32" id="wifiPass" name="wifiPass">
                     <label class="input-group-text d-none d-sm-block" for="wifiChannel">Ch</label>
                     <select class="form-select" id="wifiChannel" name="wifiChannel">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                        <option value="13">13</option>
+                        <option value="1">(1) 2412 MHz</option>
+                        <option value="2">(2) 2417 MHz</option>
+                        <option value="3">(3) 2422 MHz</option>
+                        <option value="4">(4) 2427 MHz</option>
+                        <option value="5">(5) 2432 MHz</option>
+                        <option value="6">(6) 2437 MHz</option>
+                        <option value="7">(7) 2442 MHz</option>
+                        <option value="8">(8) 2447 MHz</option>
+                        <option value="9">(9) 2452 MHz</option>
+                        <option value="10">(10) 2457 MHz</option>
+                        <option value="11">(11) 2462 MHz</option>
+                        <option value="12">(12) 2467 MHz</option>
+                        <option value="13">(13) 2472 MHz</option>
+                        <!--option value="14">(14) 2477 MHz</option-->
                     </select>
                 </div>
 
                 <div class="input-group mb-3">
-                    <span class="input-group-text d-none d-sm-block">Address for update</span>
-                    <input class="form-control" aria-label="Server" placeholder="Server" type="text" maxlength="32" id="updSvr" name="updSvr">
+                    <span class="input-group-text d-none d-sm-block">OTA</span>
+                    <input class="form-control" aria-label="Server" placeholder="Server" type="text" maxlength="32"
+                        id="otaURL" name="otaURL">
                     <span class="input-group-text d-none d-sm-block">:</span>
-                    <input class="form-control" aria-label="Port" placeholder="Port" type="number" maxlength="5" min="1" max="65535" id="updSvrPort" name="updSvrPort">
-                    <button type="button" class="btn btn-outline-warning" onclick="checkUPD();">Check</button>
+                    <input class="form-control" aria-label="Port" placeholder="Port" type="number" maxlength="5" min="1"
+                        max="65535" id="otaURLPort" name="otaURLPort">
+                    <button id="buttonCU" type="button" class="btn btn-outline-primary" onclick="checkForUpdate();">Check</button>
+                    <button id="buttonFU" type="button" class="btn btn-outline-danger" onclick="updateScetch();" disabled>Update</button>
                 </div>
-
+                <div class="input-group mb-3">
+                    <span class="input-group-text d-none d-sm-block">Path</span>
+                    <input class="form-control" aria-label="Path" placeholder="/update.json" type="text" maxlength="32"
+                        id="otaPath" name="otaPath">
+                    <div class="input-group-text">
+                        <input class="form-check-input mt-0" aria-label="Autoupdate" type="checkbox" id="otaAutoUpd"
+                            name="otaAutoUpd">&nbsp;Autoupdate
+                    </div>
+                </div>
+                <div class="input-group mb-3">
+                    <div id="updateMessage"></div>
+                </div>
             </div>
 
             <div class="row">
@@ -85,77 +107,121 @@
                     <label class="input-group-text d-none d-sm-block" for="irModel">IR Model</label>
                     <select class="form-select" id="irModel" name="irModel">
                         <option value="1">1 (ARRAH2E)</option>
-                        <!-- <option value="2">2 (ARDB1)</option> -->
+                        <option disabled value="2">2 (ARDB1)</option>
                         <option value="3">3 (ARREB1E)</option>
-                        <!-- <option value="4">4 (ARJW2)</option>
-                        <option value="5">5 (ARRY4)</option>
-                        <option value="6">6 (ARREW4E)</option> -->
+                        <option disabled value="4">4 (ARJW2)</option>
+                        <option disabled value="5">5 (ARRY4)</option>
+                        <option disabled value="6">6 (ARREW4E)</option>
                     </select>
                     <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="autoupdate" name="autoupdate"> Autoupdate
+                        <label for="enableIRRecv">Enable IR Recv&nbsp;</label>
+                        <input class="form-check-input mt-0" type="checkbox" id="enableIRRecv" name="enableIRRecv">
                     </div>
                     <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="enableIRRecv" name="enableIRRecv"> Enable IRRecv
+                        <label for="syncMe">Synchronize&nbsp;</label>
+                        <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe">
                     </div>
-                    <div class="input-group-text" hidden>
-                        <input class="form-check-input mt-0" type="checkbox" id="synchronise" name="synchronise" disabled> Synchronize other devices 
-                    </div>
-                    <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe"> Synchronize
-                    </div>
-                    <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="useMQTT" name="useMQTT"> Use MQTT
-                    </div>
-                    
                 </div>
-                <div class="input-group mb-3" hidden>
-                    <span class="input-group-text">Observe doors</span>
+            </div>
+
+            <div class="row">
+
+                <div class="input-group mb-3">
+
                     <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="innerDoor" name="innerDoor" disabled> Inners
+                        <label for="synchronize">Synchronize other devices&nbsp;</label>
+                        <input class="form-check-input mt-0" type="checkbox" id="synchronize" name="synchronize">
                     </div>
+
+                </div>
+            </div>
+
+            <div class="row" id="syncDevsGroup">
+
+                <div class="input-group mb-3">
+
+                    <div class="container-fluid">
+                        <div class="row row-no-gutters justify-content-center">
+
+                            <table id="devices" class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Use</th>
+                                        <th scope="col">Address</th>
+                                        <th scope="col">Port</th>
+                                        <th scope="col">Name</th>
+                                        <th scope="col" colspan="2"><button type="button"
+                                                class="form-control btn btn-outline-success"
+                                                onclick="addRowDevsButtons()"><i class="far fa-plus-square"></i>&nbsp;
+                                                Add</button></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="devicesTBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="row">
+
+                <div class="input-group mb-3">
+
                     <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="outerDoor" name="outerDoor" disabled> Outers
+                        <label for="useMQTT">Use MQTT&nbsp;</label>
+                        <input class="form-check-input mt-0" type="checkbox" id="useMQTT" name="useMQTT">
                     </div>
                 </div>
 
             </div>
-            
+
             <div class="row" id="mqttGroup">
 
                 <div class="input-group mb-3">
                     <span class="input-group-text d-none d-sm-block">MQTT Brocker</span>
-                    <input class="form-control" aria-label="MQTT server" placeholder="MQTT server" type="text" maxlength="32" id="mqtt_broker" name="mqtt_broker">
+                    <input class="form-control" aria-label="MQTT server" placeholder="MQTT server" type="text"
+                        maxlength="32" id="mqtt_broker" name="mqtt_broker">
                     <span class="input-group-text d-none d-sm-block">:</span>
-                    <input class="form-control" aria-label="MQTT server port" placeholder="MQTT server port" type="number" maxlength="5" min="1" max="65535" id="mqtt_port" name="mqtt_port">
+                    <input class="form-control" aria-label="MQTT server port" placeholder="MQTT server port"
+                        type="number" maxlength="5" min="1" max="65535" id="mqtt_port" name="mqtt_port">
                 </div>
 
                 <div class="input-group mb-3">
                     <span class="input-group-text d-none d-sm-block">MQTT Topic</span>
-                    <input class="form-control" aria-label="MQTT Topic" placeholder="MQTT Topic" type="text" maxlength="32" id="mqtt_topic" name="mqtt_topic">
+                    <input class="form-control" aria-label="MQTT Topic" placeholder="MQTT Topic" type="text"
+                        maxlength="32" id="mqtt_topic" name="mqtt_topic">
                 </div>
 
                 <div class="input-group mb-3">
                     <span class="input-group-text d-none d-sm-block">MQTT Username</span>
-                    <input class="form-control" aria-label="MQTT Username" placeholder="MQTT Username" type="text" maxlength="32" id="mqtt_username" name="mqtt_username">
+                    <input class="form-control" aria-label="MQTT Username" placeholder="MQTT Username" type="text"
+                        maxlength="32" id="mqtt_username" name="mqtt_username">
                     <span class="input-group-text d-none d-sm-block">MQTT Password</span>
-                    <input class="form-control" aria-label="MQTT Password" placeholder="MQTT Password" type="password" maxlength="32" id="mqtt_password" name="mqtt_password">
+                    <input class="form-control" aria-label="MQTT Password" placeholder="MQTT Password" type="password"
+                        maxlength="32" id="mqtt_password" name="mqtt_password">
                 </div>
 
             </div>
 
             <div class="row">
-                
+
                 <div class="input-group mb-3">
-                    <button type="button" class="form-control btn btn-outline-primary" onclick="getSettings();">Read</button>
-                    <button type="button" class="form-control btn btn-outline-success" onclick="setSettings();">Save</button>
-                    <button type="button" class="form-control btn btn-outline-danger" onclick="devRestart();">Restart</button>
+                    <button type="button" class="form-control btn btn-outline-primary"
+                        onclick="getSettings();">Read</button>
+                    <button type="button" class="form-control btn btn-outline-success"
+                        onclick="setSettings();">Save</button>
+                    <button type="button" class="form-control btn btn-outline-danger"
+                        onclick="devRestart();">Restart</button>
                 </div>
 
             </div>
 
         </div>
-        
+
     </div>
     <script>$(document).ready(getSettings);</script>
 </body>
+
 </html>
