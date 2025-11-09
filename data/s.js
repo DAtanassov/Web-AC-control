@@ -1,222 +1,209 @@
 var settings = {};
 
 function getSettings() {
-  fetch('settings')
-    .then(async (response) => {
-      settings = await response.json();
+
+  fetch("settings")
+    .then(r => r.json())
+    .then(data => {
+      settings = data;
       updateElements();
     })
     .catch(error => {
       console.error(error);
       updateElements();
     });
+
 }
 
 function updateElements() {
-  var el = document.getElementById("updateMessage");
-  el.innerHTML = "";
-  if (el.classList.contains("text-danger")) {
-    el.classList.remove("text-danger")
-  }else if (el.classList.contains("text-success")) {
-    el.classList.remove("text-success")
-  }
-  $.each(settings, function (name, val) {
-    var $el = $('[name="' + name + '"]'),
-      type = $el.attr('type');
 
-    switch (type) {
-      case 'checkbox':
-        $el.prop('checked', val);
-        break;
-      case 'radio':
-        $el.filter('[value="' + val + '"]').attr('checked', val);
-        break;
-      default:
-        $el.val(!$.isArray(val) ? [val] : val);
-    }
-  })
-  document.title = settings["deviceName"] + " (AC WiFi IR Control Settings v." + settings["version"] + ")";
+  const el = document.getElementById("updateMessage");
+  el.innerHTML = "";
+  el.classList.remove("text-danger", "text-success");
+
+  // update input elements by name
+  for (const [name, val] of Object.entries(settings)) {
+
+    const elements = document.querySelectorAll(`[name="${name}"]`);
+    elements.forEach(e => {
+      const type = e.type;
+      switch (type) {
+        case "checkbox":
+          e.checked = !!val;
+          break;
+        case "radio":
+          if (e.value == val) e.checked = true;
+          break;
+        default:
+          e.value = Array.isArray(val) ? val.join(",") : val;
+      }
+    });
+  }
+
+  document.title = `${settings.deviceName} (AC WiFi IR Control Settings v.${settings.version})`;
   showSyncDevs();
 
-  if ($("#useMQTT").is(':checked')) {
-    $("#mqttGroup").show();
-  } else {
-    $("#mqttGroup").hide();
-  }
-  if ($("#synchronize").is(':checked')) {
-    $("#syncDevsGroup").show();
-  } else {
-    $("#syncDevsGroup").hide();
-  }
+  document.getElementById("mqttGroup").style.display = document.getElementById("useMQTT").checked ? "block" : "none";
+  document.getElementById("syncDevsGroup").style.display = document.getElementById("synchronize").checked ? "block" : "none";
 }
 
 function postData(t, p) {
+
   fetch(p, {
     method: "POST",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json;charset=UTF-8",
+      "Content-Type": "application/json;charset=UTF-8"
     },
     body: JSON.stringify(t)
-  })
-    .catch(error => {
-      console.error(error);
-    });
+  }).catch(error => {
+    console.error(error);
+  });
+
 }
 
 function setSettings() {
 
-  settings["deviceName"] = $("#deviceName").val();
-  settings["wifiPass"] = $("#wifiPass").val();
-  settings["wifiChannel"] = parseInt($("#wifiChannel").val(), 10);
-  settings["startAP"] = $("#startAP").is(':checked') ? true : false;
-  settings["hideSSID"] = $("#hideSSID").is(':checked') ? true : false;
-  // Sync
-  settings["synchronize"] = $("#synchronize").is(':checked') ? true : false;
-  settings["syncMe"] = $("#syncMe").is(':checked') ? true : false;
-  settings["enableIRRecv"] = $("#enableIRRecv").is(':checked') ? true : false;
+  const v = id => document.getElementById(id).value;
+  const c = id => document.getElementById(id).checked;
 
-  table = document.getElementById("devicesTBody");
-  var syncDevs = JSON.parse("[]");
-  for (i = 0; i < table.childNodes.length; i++) {
-    row = table.childNodes[i];
-    syncDevs.push({});
-    //cell0 = row.cells[0].childNodes[0];//id
-    syncDevs[i]["enable"] = row.cells[1].childNodes[0].checked;//enable
-    syncDevs[i]["devURL"] = row.cells[2].childNodes[0].value;//address
-    syncDevs[i]["devPort"] = parseInt(row.cells[3].childNodes[0].value);//port
-    syncDevs[i]["devName"] = row.cells[4].childNodes[0].value;//device name
-  }
-  settings["syncDevs"] = syncDevs;
+  settings.deviceName = v("deviceName");
+  settings.wifiPass = v("wifiPass");
+  settings.wifiChannel = parseInt(v("wifiChannel"), 10);
+  settings.startAP = c("startAP");
+  settings.hideSSID = c("hideSSID");
+  // Sync
+  settings.synchronize = c("synchronize");
+  settings.syncMe = c("syncMe");
+  settings.enableIRRecv = c("enableIRRecv");
+
+  const table = document.getElementById("devicesTBody");
+  const rows = table.querySelectorAll("tr");
+  const syncDevs = [];
+  rows.forEach((row, i) => {
+    const cells = row.cells;
+    syncDevs.push({
+      enable: cells[1].querySelector("input").checked,
+      devURL: cells[2].querySelector("input").value,
+      devPort: parseInt(cells[3].querySelector("input").value),
+      devName: cells[4].querySelector("input").value
+    });
+  });
+  settings.syncDevs = syncDevs;
   // OTA
-  settings["otaAutoUpd"] = $("#otaAutoUpd").is(':checked') ? true : false;
-  settings["otaURL"] = $("#otaURL").val();
-  settings["otaURLPort"] = parseInt($("#otaURLPort").val(), 10);
-  settings["otaPath"] = $("#otaPath").val();
+  settings.otaAutoUpd = c("otaAutoUpd");
+  settings.otaURL = v("otaURL");
+  settings.otaURLPort = parseInt(v("otaURLPort"), 10);
+  settings.otaPath = v("otaPath");
   // MQTT
-  settings["useMQTT"] = $("#useMQTT").is(':checked') ? true : false;
-  settings["mqtt_broker"] = $("#mqtt_broker").val();
-  settings["mqtt_port"] = parseInt($("#mqtt_port").val(), 10);
-  settings["mqtt_topic"] = $("#mqtt_topic").val();
-  settings["mqtt_username"] = $("#mqtt_username").val();
-  settings["mqtt_password"] = $("#mqtt_password").val();
+  settings.useMQTT = c("useMQTT");
+  settings.mqtt_broker = v("mqtt_broker");
+  settings.mqtt_port = parseInt(v("mqtt_port"), 10);
+  settings.mqtt_topic = v("mqtt_topic");
+  settings.mqtt_username = v("mqtt_username");
+  settings.mqtt_password = v("mqtt_password");
   // Model
-  settings["irModel"] = parseInt($("#irModel").val(), 10);
+  settings.irModel = parseInt(v("irModel"), 10);
 
   postData(settings, "settings");
+
 }
 
 function checkForUpdate() {
-  fetch('checkforupdate')
-    .then(async (response) => {
-      rM = await response.json();
-      $("#buttonFU").prop('disabled', rM.result === false);
-      var el = document.getElementById("updateMessage");
-      if (el.classList.contains("text-danger")) {
-      el.classList.remove("text-danger")
-      }
+
+  const el = document.getElementById("updateMessage");
+
+  fetch("checkforupdate")
+    .then(r => r.json())
+    .then(rM => {
+      document.getElementById("buttonFU").disabled = rM.result === false;
+      el.classList.remove("text-danger");
       el.classList.add("text-success");
-      if (rM.result === true) {
-        el.innerHTML = "<h6>New version releised!</h6>";
-      }else {
-        el.innerHTML = "<h6>No new version found.</h6>";
-      }
+      el.innerHTML = `<h6>${rM.result ? "New version released!" : "No new version found."}</h6>`;
     })
     .catch(error => {
-      $("#buttonFU").prop('disabled', true);
-      var el = document.getElementById("updateMessage");
-      if (el.classList.contains("text-success")) {
-        el.classList.remove("text-success")
-      }
+      document.getElementById("buttonFU").disabled = true;
+      el.classList.remove("text-success");
       el.classList.add("text-danger");
-      el.innerHTML = "<h6>" + error + "</h6>";
+      el.innerHTML = `<h6>${error}</h6>`;
       console.error(error);
     });
 }
 
 function updateScetch() {
-  fetch('forceupdate', {
+  
+  fetch("forceupdate", {
     method: "POST",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json;charset=UTF-8",
+      "Content-Type": "application/json;charset=UTF-8"
     },
-    body: ""})
-    .then(async (response) => response.text())
-    .then((response) => {
-
-      $("#buttonFU").prop('disabled', true);
-      var el = document.getElementById("updateMessage");
-      el.innerHTML = "<h6>" + response + "</h6>";
-
+    body: ""
+  })
+    .then(r => r.text())
+    .then(response => {
+      document.getElementById("buttonFU").disabled = true;
+      document.getElementById("updateMessage").innerHTML = `<h6>${response}</h6>`;
     })
     .catch(error => {
-      $("#buttonFU").prop('disabled', true);
-      var el = document.getElementById("updateMessage");
-      el.innerHTML = "<h6>" + error + "</h6>";
+      document.getElementById("buttonFU").disabled = true;
+      document.getElementById("updateMessage").innerHTML = `<h6>${error}</h6>`;
       console.error(error);
     });
-
 }
-
 
 function devRestart() {
   postData(null, "reset");
 }
 
-// syncDevs
 function showSyncDevs() {
-
-  $("#devicesTBody tr").remove();
-  devs = settings.syncDevs;
-  for (i in devs) {
-    addRowDevsButtons((devs[i].enable ? "checked" : ""), devs[i].devURL, devs[i].devPort, devs[i].devName);
-  };
+  const tbody = document.getElementById("devicesTBody");
+  tbody.innerHTML = "";
+  const devs = settings.syncDevs || [];
+  devs.forEach(d =>
+    addRowDevsButtons(d.enable ? "checked" : "", d.devURL, d.devPort, d.devName)
+  );
 }
 
 function addRowDevsButtons(dEnable = "", dURL = "", dPort = 80, dName = "") {
+  
+  const table = document.getElementById("devicesTBody");
+  const row = table.insertRow();
+  const cells = [];
+  
+  for (let i = 0; i < 6; i++) cells[i] = row.insertCell(i);
 
-  var table = document.getElementById("devicesTBody");
-
-  var row = table.insertRow();
-  var cell0 = row.insertCell(0);
-  var cell1 = row.insertCell(1);
-  var cell2 = row.insertCell(2);
-  var cell3 = row.insertCell(3);
-  var cell4 = row.insertCell(4);
-  var cell5 = row.insertCell(5);
-  cell0.innerHTML = "<a id='rowID'>" + row.rowIndex + "</a>";
-  cell1.innerHTML = "<input class='form-check-input' type='checkbox' role='switch' id='enable'" + dEnable + ">";
-  cell2.innerHTML = "<input type='text' class='form-control' id='devURL' aria-describedby='basic-addon3' value='" + dURL + "'>";
-  cell3.innerHTML = "<input type='number' maxlength='5' min='1' max='65535' class='form-control' id='devPort' aria-describedby='basic-addon3' value='" + dPort + "'>";
-  cell4.innerHTML = "<input type='text' class='form-control' id='devName' aria-describedby='devName' value='" + dName + "'>";
-  cell5.colSpan = 2;
-  cell5.innerHTML = "<button type='button' class='form-control btn btn-outline-danger' onclick='deleteRowDevsButtons(this)'><i class='far fa-trash-alt'></i>&nbsp; Del</button>";
-
+  cells[0].innerHTML = `<a id="rowID">${row.rowIndex}</a>`;
+  cells[1].innerHTML = `<input class="form-check-input" type="checkbox" role="switch" ${dEnable}>`;
+  cells[2].innerHTML = `<input type="text" class="form-control" value="${dURL}">`;
+  cells[3].innerHTML = `<input type="number" min="1" max="65535" class="form-control" value="${dPort}">`;
+  cells[4].innerHTML = `<input type="text" class="form-control" value="${dName}">`;
+  cells[5].colSpan = 2;
+  cells[5].innerHTML = `<button type="button" class="form-control btn btn-outline-danger" onclick="deleteRowDevsButtons(this)">
+    <i class="far fa-trash-alt"></i>&nbsp; Del</button>`;
 }
 
-function deleteRowDevsButtons(r) {
-  var i = r.parentNode.parentNode.rowIndex;
-  table = document.getElementById("devicesTBody");
-  table.deleteRow(i - 1);
-  for (i = 0; i < table.childNodes.length; i++) {
-    row = table.childNodes[i].cells[0].innerHTML = "<a id='rowID'>" + (i + 1) + "</a>";
-  }
+function deleteRowDevsButtons(btn) {
+  const table = document.getElementById("devicesTBody");
+  const rowIndex = btn.closest("tr").rowIndex;
+  table.deleteRow(rowIndex - 1);
+  Array.from(table.rows).forEach((row, i) => {
+    row.cells[0].innerHTML = `<a id="rowID">${i + 1}</a>`;
+  });
 }
 
-$(document).ready(function () {
-  $("#useMQTT").click(function () {
-    if ($(this).is(':checked')) {
-      $("#mqttGroup").show();
-    } else {
-      $("#mqttGroup").hide();
-    }
-  });
-  $("#synchronize").click(function () {
-    if ($(this).is(':checked')) {
-      $("#syncDevsGroup").show();
-    } else {
-      $("#syncDevsGroup").hide();
-    }
-  });
+document.addEventListener("DOMContentLoaded", () => {
+
+  const useMQTT = document.getElementById("useMQTT");
+  const synchronize = document.getElementById("synchronize");
+
+  if (useMQTT)
+    useMQTT.addEventListener("click", () => {
+      document.getElementById("mqttGroup").style.display = useMQTT.checked ? "block" : "none";
+    });
+
+  if (synchronize)
+    synchronize.addEventListener("click", () => {
+      document.getElementById("syncDevsGroup").style.display = synchronize.checked ? "block" : "none";
+    });
 });

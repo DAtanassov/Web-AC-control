@@ -3,70 +3,102 @@ var setTemp;
 
 function updateStatus() {
   fetch('state')
-  .then(async (response) => {
-    state = await response.json();
-    updateElements();
-  })
-  .catch(error => {
-    console.error(error);
-  });
+    .then(response => response.json())
+    .then(data => {
+      state = data;
+      updateElements();
+    })
+    .catch(error => {
+      console.error(error);
+      updateElements();
+    });
 }
 
 function updateElements() {
-  if (state["power"] === true) {
-    $("#power").text(" ON");
-    $("#power-btn").addClass("btn-success");
-    $("#power-btn").removeClass("btn-danger");
+
+  const powerText = document.getElementById("power");
+  const powerBtn = document.getElementById("power-btn");
+  const swingBtn = document.getElementById("swing-btn");
+  const targetTemp = document.getElementById("target_temp");
+  const econoBtn = document.getElementById("econo-btn");
+  const lowNoiseBtn = document.getElementById("lowNoise-btn");
+  const heat10Btn = document.getElementById("heat10-btn");
+  const swingHBtn = document.getElementById("swingH-btn");
+  const devName = document.getElementById("devName");
+
+  // Power
+  if (state.power) {
+    powerText.textContent = " ON";
+    powerBtn.classList.add("btn-success");
+    powerBtn.classList.remove("btn-danger");
   } else {
-    $("#power").text(" OFF");
-    $("#power-btn").removeClass("btn-success");
-    $("#power-btn").addClass("btn-danger");
+    powerText.textContent = " OFF";
+    powerBtn.classList.remove("btn-success");
+    powerBtn.classList.add("btn-danger");
   }
-  if (state["swingvert"] === true) {
-    $("#swing-btn").removeClass("btn-outline-info");
-    $("#swing-btn").addClass("btn-info");
+
+  // Swing vertical
+  if (state.swingvert) {
+    swingBtn.classList.remove("btn-outline-info");
+    swingBtn.classList.add("btn-info");
   } else {
-    $("#swing-btn").removeClass("btn-info");
-    $("#swing-btn").addClass("btn-outline-info");
+    swingBtn.classList.remove("btn-info");
+    swingBtn.classList.add("btn-outline-info");
   }
-  $("#target_temp").text(state["temp"] + " °C");
-  if (state["econo"] === true) {
-    $("#econo-btn").removeClass("btn-outline-info");
-    $("#econo-btn").addClass("btn-info");
+
+  // Temperature
+  targetTemp.textContent = state.temp + " °C";
+
+  // Econo
+  if (state.econo) {
+    econoBtn.classList.remove("btn-outline-info");
+    econoBtn.classList.add("btn-info");
   } else {
-    $("#econo-btn").removeClass("btn-info");
-    $("#econo-btn").addClass("btn-outline-info");
+    econoBtn.classList.remove("btn-info");
+    econoBtn.classList.add("btn-outline-info");
   }
-  if (state["lowNoise"] === true) {
-    $("#lowNoise-btn").removeClass("btn-outline-info");
-    $("#lowNoise-btn").addClass("btn-info");
+
+  // Low Noise
+  if (state.lowNoise) {
+    lowNoiseBtn.classList.remove("btn-outline-info");
+    lowNoiseBtn.classList.add("btn-info");
   } else {
-    $("#lowNoise-btn").removeClass("btn-info");
-    $("#lowNoise-btn").addClass("btn-outline-info");
+    lowNoiseBtn.classList.remove("btn-info");
+    lowNoiseBtn.classList.add("btn-outline-info");
   }
-  if (state["heatTenC"] === true) {
-    $("#heat10-btn").removeClass("btn-outline-info");
-    $("#heat10-btn").addClass("btn-info");
-    $("#target_temp").text("10 °C");
+
+  // Heat 10°C
+  if (state.heatTenC) {
+    heat10Btn.classList.remove("btn-outline-info");
+    heat10Btn.classList.add("btn-info");
+    targetTemp.textContent = "10 °C";
   } else {
-    $("#heat10-btn").removeClass("btn-info");
-    $("#heat10-btn").addClass("btn-outline-info");
+    heat10Btn.classList.remove("btn-info");
+    heat10Btn.classList.add("btn-outline-info");
   }
-  if (!((state["irModel"] === 1) || (state["irModel"] === 4))) {
-    $("#swingH-btn").remove();
-    $("#stepHor-btn").remove();
+
+  // Hide horizontal swing if not supported
+  if (!(state.irModel === 1 || state.irModel === 4)) {
+    const sh = document.getElementById("swingH-btn");
+    const stepH = document.getElementById("stepHor-btn");
+    if (sh) sh.remove();
+    if (stepH) stepH.remove();
   }
-  if (state["swinghor"] === true) {
-    $("#swingH-btn").removeClass("btn-outline-info");
-    $("#swingH-btn").addClass("btn-info");
+
+  // Swing horizontal
+  if (state.swinghor) {
+    swingHBtn.classList.remove("btn-outline-info");
+    swingHBtn.classList.add("btn-info");
   } else {
-    $("#swingH-btn").removeClass("btn-info");
-    $("#swingH-btn").addClass("btn-outline-info");
+    swingHBtn.classList.remove("btn-info");
+    swingHBtn.classList.add("btn-outline-info");
   }
-  setModeColor(state["mode"]);
-  setFanColor(state["fan"]);
-  document.title = state["deviceName"] + " v." + state["version"];
-  $("#devName").text(state["deviceName"]);
+
+  setModeColor(state.mode);
+  setFanColor(state.fan);
+
+  document.title = `${state.deviceName} v.${state.version}`;
+  devName.textContent = state.deviceName;
 }
 
 function postData(t, p) {
@@ -74,7 +106,7 @@ function postData(t, p) {
     method: "POST",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json;charset=UTF-8",
+      "Content-Type": "application/json;charset=UTF-8"
     },
     body: JSON.stringify(t)
   })
@@ -83,197 +115,172 @@ function postData(t, p) {
     });
 }
 
+// ------------------------- MODE -------------------------
+
 function mode_onclick(mode) {
-  state["mode"] = mode;
+  state.mode = mode;
   setModeColor(mode);
-  if (state["power"] === true) {
-    postData(state, "state");
-  }
+  if (state.power) postData(state, "state");
 }
 
 function setModeColor(mode) {
-  $(".mode-btn").removeClass("btn-info");
-  $(".mode-btn").addClass("btn-outline-info");
-  if (mode === 0) {
-    $("#mode_auto").removeClass("btn-outline-info");
-    $("#mode_auto").addClass("btn-info");
+  
+  document.querySelectorAll(".mode-btn").forEach(btn => {
+    btn.classList.remove("btn-info");
+    btn.classList.add("btn-outline-info");
+  });
 
-  } else if (mode === 1) {
-    $("#mode_cooling").removeClass("btn-outline-info");
-    $("#mode_cooling").addClass("btn-info");
-  } else if (mode === 2) {
-    $("#mode_dehum").removeClass("btn-outline-info");
-    $("#mode_dehum").addClass("btn-info");
-  } else if (mode === 3) {
-    $("#mode_fan").removeClass("btn-outline-info");
-    $("#mode_fan").addClass("btn-info");
-  } else if (mode === 4) {
-    $("#mode_heating").removeClass("btn-outline-info");
-    $("#mode_heating").addClass("btn-info");
+  const map = {
+    0: "mode_auto",
+    1: "mode_cooling",
+    2: "mode_dehum",
+    3: "mode_fan",
+    4: "mode_heating"
+  };
+  const active = document.getElementById(map[mode]);
+  if (active) {
+    active.classList.remove("btn-outline-info");
+    active.classList.add("btn-info");
   }
 }
 
+// ------------------------- FAN -------------------------
+
 function setFanColor(fan) {
-  if (fan == 0) {
-    $("#fan_auto").removeClass("btn-outline-info");
-    $("#fan_auto").addClass("btn-info");
+  const fanAuto = document.getElementById("fan_auto");
+  if (fan === 0) {
+    fanAuto.classList.remove("btn-outline-info");
+    fanAuto.classList.add("btn-info");
   } else {
-    $("#fan_auto").removeClass("btn-info");
-    $("#fan_auto").addClass("btn-outline-info");
+    fanAuto.classList.remove("btn-info");
+    fanAuto.classList.add("btn-outline-info");
   }
-  for (var i = 1; i <= 4; ++i) {
-    if (i <= fan) {
-      $("#fan_lvl_" + i).attr("xlink:href", "imgsvg.svg#level_" + i + "_on");
-    } else {
-      $("#fan_lvl_" + i).attr("xlink:href", "imgsvg.svg#level_" + i + "_off");
-    }
+
+  for (let i = 1; i <= 4; i++) {
+    const icon = document.getElementById("fan_lvl_" + i);
+    if (icon)
+      icon.setAttribute(
+        "xlink:href",
+        `imgsvg.svg#level_${i}_${i <= fan ? "on" : "off"}`
+      );
   }
 }
 
 function fan_onclick(fan) {
-  state["fan"] = fan;
+  state.fan = fan;
   setFanColor(fan);
-  if (state["power"] === true) {
-    postData(state, "state");
-  }
+  if (state.power) postData(state, "state");
 }
 
+// ------------------------- POWER -------------------------
+
 function power_onclick() {
-  if (state["power"] === true) {
-    state["power"] = false;
-    $("#power").text(" OFF");
-    $("#power-btn").removeClass("btn-success");
-    $("#power-btn").addClass("btn-danger");
+  const powerText = document.getElementById("power");
+  const powerBtn = document.getElementById("power-btn");
+
+  state.power = !state.power;
+
+  if (state.power) {
+    powerText.textContent = " ON";
+    powerBtn.classList.add("btn-success");
+    powerBtn.classList.remove("btn-danger");
   } else {
-    state["power"] = true;
-    $("#power").text(" ON");
-    $("#power-btn").removeClass("btn-danger");
-    $("#power-btn").addClass("btn-success");
+    powerText.textContent = " OFF";
+    powerBtn.classList.remove("btn-success");
+    powerBtn.classList.add("btn-danger");
   }
+
   postData(state, "state");
 }
 
+// ------------------------- TEMP -------------------------
+
 function temp_onclick(temp) {
-  state["temp"] += temp;
-  if (state["mode"] == 1) {
-    if (state["temp"] < 18) {
-      state["temp"] = 18;
-    }
-  } else {
-    if (state["temp"] < 16) {
-      state["temp"] = 16;
-    }
-  }
-  if (state["temp"] > 30) {
-    state["temp"] = 30;
-  }
-  $("#target_temp").text(state["temp"] + " °C");
-  if (state["power"] === true) {
+  state.temp += temp;
+  if (state.mode == 1 && state.temp < 18) state.temp = 18;
+  else if (state.temp < 16) state.temp = 16;
+  if (state.temp > 30) state.temp = 30;
+
+  document.getElementById("target_temp").textContent = state.temp + " °C";
+
+  if (state.power) {
     clearTimeout(setTemp);
-    setTemp = setTimeout(function () { postData(state, "state"); }, 1000);
+    setTemp = setTimeout(() => postData(state, "state"), 1000);
   }
 }
 
+// ------------------------- SWING VERTICAL -------------------------
+
 function swing_onclick() {
-  if (state["swingvert"]) {
-    state["swingvert"] = false;
-    $("#swing-btn").removeClass("btn-info");
-    $("#swing-btn").addClass("btn-outline-info");
-  } else {
-    state["swingvert"] = true;
-    $("#swing-btn").removeClass("btn-outline-info");
-    $("#swing-btn").addClass("btn-info");
-  }
-  if (state["power"] === true) {
-    postData(state, "state");
-  }
+  const btn = document.getElementById("swing-btn");
+  state.swingvert = !state.swingvert;
+  btn.classList.toggle("btn-info", state.swingvert);
+  btn.classList.toggle("btn-outline-info", !state.swingvert);
+  if (state.power) postData(state, "state");
 }
 
 function StepV_onclick() {
-  state["swingvert"] = false;
-  $("#swing-btn").removeClass("btn-info");
-  $("#swing-btn").addClass("btn-outline-info");
-  if (state["power"] === true) {
-    stepVState = { "stepv": true, "swingvert": false };
-    postData(stepVState, "stepv");
-  }
+  const btn = document.getElementById("swing-btn");
+  state.swingvert = false;
+  btn.classList.remove("btn-info");
+  btn.classList.add("btn-outline-info");
+  if (state.power) postData({ stepv: true, swingvert: false }, "stepv");
 }
+
+// ------------------------- ECONO -------------------------
 
 function econo_onclick() {
-  if (state["econo"]) {
-    state["econo"] = false;
-    $("#econo-btn").removeClass("btn-info");
-    $("#econo-btn").addClass("btn-outline-info");
-  } else {
-    state["econo"] = true;
-    $("#econo-btn").removeClass("btn-outline-info");
-    $("#econo-btn").addClass("btn-info");
-  }
-  if (state["power"] === true) {
-    postData(state, "econo");
-  }
+  const btn = document.getElementById("econo-btn");
+  state.econo = !state.econo;
+  btn.classList.toggle("btn-info", state.econo);
+  btn.classList.toggle("btn-outline-info", !state.econo);
+  if (state.power) postData(state, "econo");
 }
+
+// ------------------------- TURBO -------------------------
 
 function turbo_onclick() {
-  if (state["power"] === true) {
-    turboState = { "turbo": true };
-    postData(turboState, "turbo");
-  }
+  if (state.power) postData({ turbo: true }, "turbo");
 }
+
+// ------------------------- LOW NOISE -------------------------
 
 function lowNoise_onclick() {
-  if (state["lowNoise"]) {
-    state["lowNoise"] = false;
-    $("#lowNoise-btn").removeClass("btn-info");
-    $("#lowNoise-btn").addClass("btn-outline-info");
-  } else {
-    state["lowNoise"] = true;
-    $("#lowNoise-btn").removeClass("btn-outline-info");
-    $("#lowNoise-btn").addClass("btn-info");
-  }
-  if (state["power"] === true) {
-    postData(state, "lnoise");
-  }
+  const btn = document.getElementById("lowNoise-btn");
+  state.lowNoise = !state.lowNoise;
+  btn.classList.toggle("btn-info", state.lowNoise);
+  btn.classList.toggle("btn-outline-info", !state.lowNoise);
+  if (state.power) postData(state, "lnoise");
 }
+
+// ------------------------- HEAT 10°C -------------------------
 
 function heat10_onclick() {
-  if (state["heatTenC"]) {
-    state["heatTenC"] = false;
-    $("#heat10-btn").removeClass("btn-info");
-    $("#heat10-btn").addClass("btn-outline-info");
-    $("#target_temp").text(state["temp"] + " °C");
-  } else {
-    state["heatTenC"] = true;
-    $("#heat10-btn").removeClass("btn-outline-info");
-    $("#heat10-btn").addClass("btn-info");
-    $("#target_temp").text("10 °C");
-  }
-  if (state["power"] === true) {
-    postData(state, "heattenc");
-  }
+  const btn = document.getElementById("heat10-btn");
+  const tempLabel = document.getElementById("target_temp");
+
+  state.heatTenC = !state.heatTenC;
+  btn.classList.toggle("btn-info", state.heatTenC);
+  btn.classList.toggle("btn-outline-info", !state.heatTenC);
+  tempLabel.textContent = state.heatTenC ? "10 °C" : state.temp + " °C";
+
+  if (state.power) postData(state, "heattenc");
 }
 
+// ------------------------- SWING HORIZONTAL -------------------------
+
 function swingH_onclick() {
-  if (state["swinghor"]) {
-    state["swinghor"] = false;
-    $("#swingH-btn").removeClass("btn-info");
-    $("#swingH-btn").addClass("btn-outline-info");
-  } else {
-    state["swinghor"] = true;
-    $("#swingH-btn").removeClass("btn-outline-info");
-    $("#swingH-btn").addClass("btn-info");
-  }
-  if (state["power"] === true) {
-    postData(state, "state");
-  }
+  const btn = document.getElementById("swingH-btn");
+  state.swinghor = !state.swinghor;
+  btn.classList.toggle("btn-info", state.swinghor);
+  btn.classList.toggle("btn-outline-info", !state.swinghor);
+  if (state.power) postData(state, "state");
 }
 
 function StepH_onclick() {
-  state["swinghor"] = false;
-  $("#swingH-btn").removeClass("btn-info");
-  $("#swingH-btn").addClass("btn-outline-info");
-  if (state["power"] === true) {
-    stepVState = { "steph": true, "swinghor": false };
-    postData(stepVState, "steph");
-  }
+  const btn = document.getElementById("swingH-btn");
+  state.swinghor = false;
+  btn.classList.remove("btn-info");
+  btn.classList.add("btn-outline-info");
+  if (state.power) postData({ steph: true, swinghor: false }, "steph");
 }
