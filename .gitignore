@@ -34,6 +34,7 @@
 # Others
 build
 data/bootstrap*
-data/jquery*
+data/state
+data/settings
 for_upload
 todo.txt

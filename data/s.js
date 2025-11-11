@@ -19,7 +19,7 @@ function updateElements() {
 
   const el = document.getElementById("updateMessage");
   el.innerHTML = "";
-  el.classList.remove("text-danger", "text-success");
+  el.classList.remove("text-danger", "text-success", "mt-4");
 
   // update input elements by name
   for (const [name, val] of Object.entries(settings)) {
@@ -118,13 +118,13 @@ function checkForUpdate() {
     .then(rM => {
       document.getElementById("buttonFU").disabled = rM.result === false;
       el.classList.remove("text-danger");
-      el.classList.add("text-success");
+      el.classList.add("text-success", "mt-4");
       el.innerHTML = `<h6>${rM.result ? "New version released!" : "No new version found."}</h6>`;
     })
     .catch(error => {
       document.getElementById("buttonFU").disabled = true;
       el.classList.remove("text-success");
-      el.classList.add("text-danger");
+      el.classList.add("text-danger", "mt-4");
       el.innerHTML = `<h6>${error}</h6>`;
       console.error(error);
     });
@@ -143,11 +143,15 @@ function updateScetch() {
     .then(r => r.text())
     .then(response => {
       document.getElementById("buttonFU").disabled = true;
-      document.getElementById("updateMessage").innerHTML = `<h6>${response}</h6>`;
+      const el = document.getElementById("updateMessage");
+      el.innerHTML = `<h6>${response}</h6>`;
+      el.classList.add("mt-4");
     })
     .catch(error => {
       document.getElementById("buttonFU").disabled = true;
-      document.getElementById("updateMessage").innerHTML = `<h6>${error}</h6>`;
+      const el = document.getElementById("updateMessage");
+      el.innerHTML = `<h6>${error}</h6>`;
+      el.classList.add("mt-4");
       console.error(error);
     });
 }
@@ -174,13 +178,11 @@ function addRowDevsButtons(dEnable = "", dURL = "", dPort = 80, dName = "") {
   for (let i = 0; i < 6; i++) cells[i] = row.insertCell(i);
 
   cells[0].innerHTML = `<a id="rowID">${row.rowIndex}</a>`;
-  cells[1].innerHTML = `<input class="form-check-input" type="checkbox" role="switch" ${dEnable}>`;
+  cells[1].innerHTML = `<div class="form-check form-switch"><input class="form-check-input" type="checkbox" switch ${dEnable}></div>`;
   cells[2].innerHTML = `<input type="text" class="form-control" value="${dURL}">`;
   cells[3].innerHTML = `<input type="number" min="1" max="65535" class="form-control" value="${dPort}">`;
   cells[4].innerHTML = `<input type="text" class="form-control" value="${dName}">`;
-  cells[5].colSpan = 2;
-  cells[5].innerHTML = `<button type="button" class="form-control btn btn-outline-danger" onclick="deleteRowDevsButtons(this)">
-    <i class="far fa-trash-alt"></i>&nbsp; Del</button>`;
+  cells[5].innerHTML = `<input type="button" class="form-control btn btn-outline-danger" onclick="deleteRowDevsButtons(this)" value="Del" />`;
 }
 
 function deleteRowDevsButtons(btn) {
