@@ -36,5 +36,6 @@ build
 data/bootstrap*
 data/state
 data/settings
+data/*.gz
 for_upload
 todo.txt
