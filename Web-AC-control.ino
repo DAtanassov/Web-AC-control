@@ -621,6 +621,7 @@ void onMqttMessage(int messageSize) {
     ESP.restart();
   } else {
     sendMQTT("{\"islocal\":true,\"ep\":\"state\", \"message\":" + output + "}");
+    syncOtherDevices(output, "/state");
   }
 }
 
