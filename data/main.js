@@ -85,13 +85,15 @@ function updateElements() {
     if (stepH) stepH.remove();
   }
 
-  // Swing horizontal
-  if (state.swinghor) {
-    swingHBtn.classList.remove("btn-outline-info");
-    swingHBtn.classList.add("btn-info");
-  } else {
-    swingHBtn.classList.remove("btn-info");
-    swingHBtn.classList.add("btn-outline-info");
+  if (state.irModel === 1 || state.irModel === 4) {
+    // Swing horizontal
+    if (state.swinghor) {
+      swingHBtn.classList.remove("btn-outline-info");
+      swingHBtn.classList.add("btn-info");
+    } else {
+      swingHBtn.classList.remove("btn-info");
+      swingHBtn.classList.add("btn-outline-info");
+    }
   }
 
   setModeColor(state.mode);

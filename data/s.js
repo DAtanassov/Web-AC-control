@@ -104,6 +104,9 @@ function setSettings() {
   settings.mqtt_password = v("mqtt_password");
   // Model
   settings.irModel = parseInt(v("irModel"), 10);
+  // Other
+  settings.lpMode = c("lpMode");
+  settings.sleepType = parseInt(v("sleepType"), 10);
 
   postData(settings, "settings");
 

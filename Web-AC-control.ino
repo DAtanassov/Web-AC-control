@@ -64,6 +64,9 @@ String GetSettingsString() {
   root["mqtt_password"] = root["mqtt_password"] | deviceSettings.mqtt_password;
   // Model
   root["irModel"] = root["irModel"] | deviceSettings.irModel;
+  // Other
+  root["lpMode"] = root["lpMode"] | deviceSettings.lpMode;
+  root["sleepType"] = root["sleepType"] | deviceSettings.sleepType;
 
   // Close the file (File's destructor doesn't close the file)
   file.close();
@@ -119,6 +122,9 @@ void ReadDeviceSettings() {
   strlcpy(deviceSettings.mqtt_password, root["mqtt_password"] | "", sizeof(deviceSettings.mqtt_password));
   // Model
   deviceSettings.irModel = root["irModel"] | 1;
+  // Other
+  deviceSettings.lpMode = root["lpMode"] | false;
+  deviceSettings.sleepType = root["sleepType"] | 0;
 
   if (!fileExists) {
 
@@ -145,6 +151,9 @@ void ReadDeviceSettings() {
     root["mqtt_password"] = deviceSettings.mqtt_password;
     // Model
     root["irModel"] = deviceSettings.irModel;
+    // Other
+    root["lpMode"] = deviceSettings.lpMode;
+    root["sleepType"] = deviceSettings.sleepType;
 
     // Serialize JSON to file
     serializeJson(root, file);
@@ -172,6 +181,7 @@ String SetDeviceSettings(String settings) {
     bool newSettingsAP = false;
     bool changeStateMQTT = false;
     bool newIRmodel = false;
+    bool newLPMode = false;
 
     if (!root["deviceName"].isNull()) {
       newSettingsAP = deviceSettings.deviceName != root["deviceName"];
@@ -263,6 +273,15 @@ String SetDeviceSettings(String settings) {
       newIRmodel = deviceSettings.irModel != root["irModel"];
       deviceSettings.irModel = root["irModel"];
     }
+    // Other
+    if (!root["lpMode"].isNull()) {
+      newLPMode = deviceSettings.lpMode != root["lpMode"];
+      deviceSettings.lpMode = root["lpMode"];
+    }
+    if (!root["sleepType"].isNull()) {
+      newLPMode = deviceSettings.sleepType != root["sleepType"] || newLPMode;
+      deviceSettings.sleepType = root["sleepType"];
+    }
 
     if (newIRmodel) {
       // Set up what we want to send. See ir_Fujitsu.cpp for all the options.
@@ -282,6 +301,10 @@ String SetDeviceSettings(String settings) {
       }
     }
 
+    if (newLPMode) {
+      SetLPMode();
+    }
+    
     // Serialize JSON to file
     serializeJson(root, file);
 
@@ -765,23 +788,23 @@ void handleSketchDownload(bool forceupdate) {
     }
 
     String arch;
-#if defined(ARDUINO_ESP8266_WEMOS_D1R1) || defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_ESP8266_WEMOS_D1MINIPRO) || defined(ARDUINO_ESP8266_WEMOS_D1MINILITE)
-    if (root["WEMOS"].isNull()) {
-      client.stop();
-      timerOTA.reset();  // Reset timer
-      return;
-    }
-    arch = "WEMOS";
-    //const char* PATH = "/devs/ota/ac/wemos-v%d.bin";
-#else
-    if (root["ESP8266"].isNull()) {
-      client.stop();
-      timerOTA.reset();  // Reset timer
-      return;
-    }
-    arch = "ESP8266";
-    //const char* PATH = "/devs/ota/ac/nodemcu-v%d.bin";
-#endif
+  #if defined(ARDUINO_ESP8266_WEMOS_D1R1) || defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_ESP8266_WEMOS_D1MINIPRO) || defined(ARDUINO_ESP8266_WEMOS_D1MINILITE)
+      if (root["WEMOS"].isNull()) {
+        client.stop();
+        timerOTA.reset();  // Reset timer
+        return;
+      }
+      arch = "WEMOS";
+      //const char* PATH = "/devs/ota/ac/wemos-v%d.bin";
+  #else
+      if (root["ESP8266"].isNull()) {
+        client.stop();
+        timerOTA.reset();  // Reset timer
+        return;
+      }
+      arch = "ESP8266";
+      //const char* PATH = "/devs/ota/ac/nodemcu-v%d.bin";
+  #endif
 
     if (!(VERSION < root[arch]["version"])) {
       client.stop();
@@ -906,19 +929,19 @@ bool checkforupdate() {
   }
 
   String arch;
-#if defined(ARDUINO_ESP8266_WEMOS_D1R1) || defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_ESP8266_WEMOS_D1MINIPRO) || defined(ARDUINO_ESP8266_WEMOS_D1MINILITE)
-  if (root["WEMOS"].isNull()) {
-    client.stop();
-    return false;
-  }
-  arch = "WEMOS";
-#else
-  if (root["ESP8266"].isNull()) {
-    client.stop();
-    return false;
-  }
-  arch = "ESP8266";
-#endif
+  #if defined(ARDUINO_ESP8266_WEMOS_D1R1) || defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ARDUINO_ESP8266_WEMOS_D1MINIPRO) || defined(ARDUINO_ESP8266_WEMOS_D1MINILITE)
+    if (root["WEMOS"].isNull()) {
+      client.stop();
+      return false;
+    }
+    arch = "WEMOS";
+  #else
+    if (root["ESP8266"].isNull()) {
+      client.stop();
+      return false;
+    }
+    arch = "ESP8266";
+  #endif
 
   if (!(VERSION < root[arch]["version"])) {
     client.stop();
@@ -1549,6 +1572,27 @@ void syncOtherDevices(String output, String endPoint) {
 
 /*################################ WEB  ################################*/
 
+/*################################ WIFI ################################*/
+
+void SetLPMode() {
+  
+  if (deviceSettings.lpMode) {
+    // 0 WIFI_NONE_SLEEP, 1 WIFI_LIGHT_SLEEP, 2 WIFI_MODEM_SLEEP
+    if (deviceSettings.sleepType == 1){
+      WiFi.setSleepMode(WIFI_LIGHT_SLEEP);
+    }else if (deviceSettings.sleepType == 2){
+      WiFi.setSleepMode(WIFI_MODEM_SLEEP);
+    }else{
+      WiFi.setSleepMode(WIFI_NONE_SLEEP);
+    }
+  } else {
+    WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  }
+
+}
+
+/*################################ WIFI ################################*/
+
 /*############################### Setup  ###############################*/
 
 void setUpTimers() {
@@ -1735,7 +1779,8 @@ void setup() {
       //Serial.println("Soft AP started");
     }
   }
-
+  SetLPMode();
+  
   // MQTT
   setMQTT();
 
@@ -1760,4 +1805,6 @@ void loop() {
   printIRresults();
 
   server.handleClient();
+
+  delay(100);
 }

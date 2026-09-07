@@ -39,7 +39,7 @@
 #include <ir_Fujitsu.h>  //  replace library based on your AC unit model, check https://github.com/crankyoldgit/IRremoteESP8266
 
 // OTA
-const short VERSION = 3;
+const short VERSION = 4;
 
 // ==================== start of TUNEABLE PARAMETERS ====================
 
@@ -145,7 +145,10 @@ struct DeviceSettings {
   char mqtt_username[32];
   char mqtt_password[32];
   // Model
-  unsigned short irModel;
+  unsigned short irModel; //1 ARRAH2E, 2 ARDB1, 3 ARREB1E, 4, ARJW2, 5 ARRY4, 6 ARREW4E
+  // Other
+  bool lpMode;
+  unsigned short sleepType; // 0 WIFI_NONE_SLEEP, 1 WIFI_LIGHT_SLEEP, 2 WIFI_MODEM_SLEEP
 } deviceSettings;
 
 File fsUploadFile;

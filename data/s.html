@@ -118,7 +118,7 @@
 
             <div class="row card shadow-lg border-0 p-2 mb-2">
 
-                <div class="input-group">
+                <div class="input-group mb-2">
                     <div class="input-group-text">
                         <label for="syncMe">Sync me&nbsp;</label>
                         <input class="form-check-input mt-0" type="checkbox" id="syncMe" name="syncMe">
@@ -131,6 +131,18 @@
                         <label for="useMQTT">Use MQTT&nbsp;</label>
                         <input class="form-check-input mt-0" type="checkbox" id="useMQTT" name="useMQTT">
                     </div>
+                </div>
+                <div class="input-group">
+                    <div class="input-group-text">
+                        <label for="lpMode">Low Power Mode&nbsp;</label>
+                        <input class="form-check-input mt-0" type="checkbox" id="lpMode" name="lpMode">
+                    </div>
+                    <label class="input-group-text d-none d-sm-block" for="sleepType">Sleep Type</label>
+                    <select class="form-select" id="sleepType" name="sleepType">
+                        <option value="0">WIFI non Sleep</option>
+                        <option value="1">WIFI Light Sleep</option>
+                        <option value="2">WIFI Modem Sleep</option>
+                    </select>
                 </div>
             </div>
 
